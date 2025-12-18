@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.UserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserResultMap" type="com.demo.dp.domain.entity.User">
+        <id property="id" column="id"/>
+        <result property="mobile" column="mobile"/>
+        <result property="email" column="email"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 根据手机号查询 -->
+    <select id="findByMobile" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        FROM user
+        WHERE mobile = #{mobile}
+    </select>
+
+    <!-- 根据邮箱查询 -->
+    <select id="findByEmail" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        FROM user
+        WHERE email = #{email}
+    </select>
+
+    <!-- 根据 ID 查询 -->
+    <select id="findById" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        FROM user
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.demo.dp.domain.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (mobile, email, password_hash, nickname, avatar, status, created_at, updated_at)
+        VALUES (#{mobile}, #{email}, #{passwordHash}, #{nickname}, #{avatar}, 
+                COALESCE(#{status}, 1), NOW(), NOW())
+    </insert>
+
+</mapper>
+

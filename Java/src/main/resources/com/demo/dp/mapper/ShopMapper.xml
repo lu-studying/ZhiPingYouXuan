@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    MyBatis Mapper XML 映射文件：商家数据访问层SQL定义
+    
+    该文件定义了 ShopMapper 接口中所有方法对应的SQL语句。
+    使用 MyBatis 的 XML 映射方式，支持动态SQL、结果映射等功能。
+    
+    namespace：必须与对应的 Mapper 接口的完整类名一致
+-->
+<mapper namespace="com.demo.dp.mapper.ShopMapper">
+
+    <!--
+        结果映射（ResultMap）：定义数据库字段与Java对象属性的映射关系
+        
+        id="ShopResultMap"：结果映射的唯一标识，在 <select> 标签中通过 resultMap 属性引用
+        type="com.demo.dp.domain.entity.Shop"：映射的目标Java类型，即Shop实体类
+        
+        字段映射说明：
+        - <id>：主键字段映射，property是Java属性名，column是数据库列名
+        - <result>：普通字段映射，property是Java属性名，column是数据库列名
+        - 数据库使用下划线命名（如 avg_price），Java使用驼峰命名（如 avgPrice）
+        - MyBatis会自动处理下划线到驼峰的转换（通过配置 map-underscore-to-camel-case=true）
+    -->
+    <resultMap id="ShopResultMap" type="com.demo.dp.domain.entity.Shop">
+        <!-- 主键字段：id -->
+        <id property="id" column="id"/>
+        
+        <!-- 商家名称 -->
+        <result property="name" column="name"/>
+        
+        <!-- 商家分类 -->
+        <result property="category" column="category"/>
+        
+        <!-- 商家地址 -->
+        <result property="address" column="address"/>
+        
+        <!-- 经度 -->
+        <result property="lng" column="lng"/>
+        
+        <!-- 纬度 -->
+        <result property="lat" column="lat"/>
+        
+        <!-- 人均价格：数据库字段 avg_price 映射到 Java 属性 avgPrice -->
+        <result property="avgPrice" column="avg_price"/>
+        
+        <!-- 平均评分：数据库字段 avg_score 映射到 Java 属性 avgScore -->
+        <result property="avgScore" column="avg_score"/>
+        
+        <!-- 状态：1=正常，0=已删除/下线 -->
+        <result property="status" column="status"/>
+        
+        <!-- 创建时间：数据库字段 created_at 映射到 Java 属性 createdAt -->
+        <result property="createdAt" column="created_at"/>
+        
+        <!-- 更新时间：数据库字段 updated_at 映射到 Java 属性 updatedAt -->
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!--
+        根据主键ID查询商家信息
+        
+        id="findById"：对应 ShopMapper 接口中的 findById 方法
+        resultMap="ShopResultMap"：使用上面定义的结果映射，将查询结果映射到Shop对象
+        
+        SQL说明：
+        - 查询shop表中的所有字段
+        - WHERE条件：id = #{id}，使用MyBatis参数占位符，防止SQL注入
+        - #{id} 会被替换为方法参数中的id值
+    -->
+    <select id="findById" resultMap="ShopResultMap">
+        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at
+        FROM shop
+        WHERE id = #{id}
+    </select>
+
+    <!--
+        插入新商家记录
+        
+        id="insert"：对应 ShopMapper 接口中的 insert 方法
+        parameterType="com.demo.dp.domain.entity.Shop"：参数类型为Shop实体类
+        useGeneratedKeys="true"：启用自动生成主键功能
+        keyProperty="id"：将自动生成的主键值设置到Shop对象的id属性中
+        
+        SQL说明：
+        - INSERT INTO shop：插入到shop表
+        - VALUES子句：使用MyBatis参数占位符 #{propertyName} 获取Shop对象的属性值
+        - COALESCE(#{status}, 1)：如果status为null，则使用默认值1（正常状态）
+        - NOW()：MySQL函数，返回当前时间，用于设置created_at和updated_at字段
+    -->
+    <insert id="insert" parameterType="com.demo.dp.domain.entity.Shop" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO shop (name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at)
+        VALUES (#{name}, #{category}, #{address}, #{lng}, #{lat}, #{avgPrice}, #{avgScore}, 
+                COALESCE(#{status}, 1), NOW(), NOW())
+    </insert>
+
+    <!--
+        更新商家信息
+        
+        id="update"：对应 ShopMapper 接口中的 update 方法
+        parameterType="com.demo.dp.domain.entity.Shop"：参数类型为Shop实体类
+        
+        SQL说明：
+        - UPDATE shop：更新shop表
+        - SET子句：更新所有字段（除了id和created_at）
+        - 使用MyBatis参数占位符 #{propertyName} 获取Shop对象的属性值
+        - NOW()：MySQL函数，返回当前时间，用于更新updated_at字段
+        - WHERE id = #{id}：根据主键ID更新，确保只更新一条记录
+        
+        注意：该方法会更新所有字段，如果某个字段为null，也会将数据库中的对应字段更新为null。
+        如果需要部分更新，应该在Service层先查询现有数据，然后合并后再调用此方法。
+    -->
+    <update id="update" parameterType="com.demo.dp.domain.entity.Shop">
+        UPDATE shop
+        SET name = #{name},
+            category = #{category},
+            address = #{address},
+            lng = #{lng},
+            lat = #{lat},
+            avg_price = #{avgPrice},
+            avg_score = #{avgScore},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!--
+        根据多条件分页查询商家列表
+        
+        id="findByConditions"：对应 ShopMapper 接口中的 findByConditions 方法
+        resultMap="ShopResultMap"：使用上面定义的结果映射，将查询结果映射到Shop对象列表
+        
+        SQL说明：
+        1. SELECT子句：查询所有字段
+        2. FROM shop：从shop表查询
+        3. <where>标签：MyBatis动态SQL标签，会自动处理WHERE关键字
+           - 如果所有条件都不满足，不会添加WHERE关键字
+           - 如果至少有一个条件满足，会自动添加WHERE关键字
+           - 会自动去除第一个条件前的AND/OR关键字
+        4. status = 1：只查询正常状态的商家（status=1），已删除的商家（status=0）不显示
+        5. <if>标签：MyBatis动态SQL标签，根据条件判断是否添加SQL片段
+           - test属性：判断条件，使用OGNL表达式
+           - category条件：如果category不为null且不为空字符串，则添加分类筛选条件
+           - keyword条件：如果keyword不为null且不为空字符串，则在name和address字段中模糊搜索
+             - CONCAT('%', #{keyword}, '%')：MySQL函数，拼接字符串，实现LIKE模糊查询
+             - 例如：keyword="海底捞" -> LIKE '%海底捞%'
+           - minScore条件：如果minScore不为null，则添加评分筛选条件（avg_score >= minScore）
+           - maxPrice条件：如果maxPrice不为null，则添加价格筛选条件（avg_price <= maxPrice）
+             - &lt;= 是XML转义字符，表示 <=
+        6. ORDER BY子句：排序规则
+           - avg_score DESC：首先按平均评分降序（评分高的在前）
+           - created_at DESC：评分相同时按创建时间降序（新创建的在前）
+        7. LIMIT子句：分页限制
+           - #{offset}：查询偏移量，表示从第几条记录开始查询
+           - #{limit}：每页返回的记录数
+           - 例如：LIMIT 0, 10 表示从第0条开始，返回10条记录
+    -->
+    <select id="findByConditions" resultMap="ShopResultMap">
+        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at
+        FROM shop
+        <where>
+            <!-- 只查询正常状态的商家，已删除的商家不显示 -->
+            status = 1
+            
+            <!-- 分类筛选：如果category不为空，则按分类精确匹配 -->
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            
+            <!-- 关键词搜索：如果keyword不为空，则在名称和地址中模糊搜索 -->
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR address LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            
+            <!-- 评分筛选：如果minScore不为空，则只返回评分>=minScore的商家 -->
+            <if test="minScore != null">
+                AND avg_score >= #{minScore}
+            </if>
+            
+            <!-- 价格筛选：如果maxPrice不为空，则只返回价格<=maxPrice的商家 -->
+            <if test="maxPrice != null">
+                AND avg_price &lt;= #{maxPrice}
+            </if>
+        </where>
+        <!-- 排序：按评分降序，评分相同时按创建时间降序 -->
+        ORDER BY avg_score DESC, created_at DESC
+        <!-- 分页：从offset位置开始，返回limit条记录 -->
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!--
+        根据多条件统计商家总数
+        
+        id="countByConditions"：对应 ShopMapper 接口中的 countByConditions 方法
+        resultType="long"：返回类型为long（整数），因为COUNT(*)返回的是记录数
+        
+        SQL说明：
+        1. SELECT COUNT(*)：使用COUNT函数统计符合条件的记录总数
+        2. FROM shop：从shop表统计
+        3. <where>标签：与findByConditions方法使用相同的动态SQL逻辑
+           - 只统计status=1（正常状态）的商家
+           - 支持分类筛选、关键词搜索、评分筛选、价格筛选
+           - 筛选条件与findByConditions方法完全相同，确保统计结果与查询结果一致
+        4. 不使用ORDER BY和LIMIT，因为只需要总数，不需要排序和分页
+        
+        用途：主要用于分页计算，计算总页数 = (total + size - 1) / size
+    -->
+    <select id="countByConditions" resultType="long">
+        SELECT COUNT(*)
+        FROM shop
+        <where>
+            <!-- 只统计正常状态的商家，已删除的商家不计入总数 -->
+            status = 1
+            
+            <!-- 分类筛选：如果category不为空，则按分类精确匹配 -->
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            
+            <!-- 关键词搜索：如果keyword不为空，则在名称和地址中模糊搜索 -->
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR address LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            
+            <!-- 评分筛选：如果minScore不为空，则只统计评分>=minScore的商家 -->
+            <if test="minScore != null">
+                AND avg_score >= #{minScore}
+            </if>
+            
+            <!-- 价格筛选：如果maxPrice不为空，则只统计价格<=maxPrice的商家 -->
+            <if test="maxPrice != null">
+                AND avg_price &lt;= #{maxPrice}
+            </if>
+        </where>
+    </select>
+
+</mapper>
+

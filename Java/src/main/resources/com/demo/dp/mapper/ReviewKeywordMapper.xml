@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.ReviewKeywordMapper">
+
+    <!-- 结果映射：关键词实体 -->
+    <resultMap id="ReviewKeywordResultMap" type="com.demo.dp.domain.entity.ReviewKeyword">
+        <id property="id" column="id"/>
+        <result property="reviewId" column="review_id"/>
+        <result property="keyword" column="keyword"/>
+        <result property="weight" column="weight"/>
+    </resultMap>
+
+    <!-- 批量插入关键词 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO review_keyword (review_id, keyword, weight)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.reviewId}, #{item.keyword}, COALESCE(#{item.weight}, 1))
+        </foreach>
+    </insert>
+
+    <!-- 按店铺和关键词召回点评ID，用于推荐 -->
+    <select id="findReviewIdsByShopAndKeyword" resultType="long">
+        SELECT rk.review_id
+        FROM review_keyword rk
+        JOIN review r ON r.id = rk.review_id
+        WHERE r.shop_id = #{shopId}
+          AND r.status = 1
+          AND rk.keyword = #{keyword}
+        ORDER BY rk.weight DESC, r.like_count DESC, r.rating DESC, r.created_at DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
+

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.ReviewMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="ReviewResultMap" type="com.demo.dp.domain.entity.Review">
+        <id property="id" column="id"/>
+        <result property="shopId" column="shop_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="rating" column="rating"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images" jdbcType="VARCHAR"/>
+        <result property="isAiGenerated" column="is_ai_generated" jdbcType="BIT"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 根据商家 ID 分页查询 -->
+    <select id="findByShopId" resultMap="ReviewResultMap">
+        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
+        FROM review
+        WHERE shop_id = #{shopId} AND status = 1
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计商家点评总数 -->
+    <select id="countByShopId" resultType="long">
+        SELECT COUNT(*)
+        FROM review
+        WHERE shop_id = #{shopId} AND status = 1
+    </select>
+
+    <!-- 根据 ID 查询 -->
+    <select id="findById" resultMap="ReviewResultMap">
+        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
+        FROM review
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入点评 -->
+    <insert id="insert" parameterType="com.demo.dp.domain.entity.Review" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO review (shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at)
+        VALUES (#{shopId}, #{userId}, #{rating}, #{content}, #{images}, 
+                COALESCE(#{isAiGenerated}, 0), COALESCE(#{likeCount}, 0), COALESCE(#{status}, 1), NOW())
+    </insert>
+
+    <!-- 基于关键词的店铺点评推荐（带排序） -->
+    <select id="findTopByShopAndKeyword" resultMap="ReviewResultMap">
+        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
+        FROM review
+        WHERE shop_id = #{shopId}
+          AND status = 1
+          <if test="keyword != null and keyword != ''">
+              AND content LIKE CONCAT('%', #{keyword}, '%')
+          </if>
+        ORDER BY like_count DESC, rating DESC, created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 推荐兜底：仅按点赞/评分/时间排序 -->
+    <select id="findTopByShop" resultMap="ReviewResultMap">
+        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
+        FROM review
+        WHERE shop_id = #{shopId}
+          AND status = 1
+        ORDER BY like_count DESC, rating DESC, created_at DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
+
