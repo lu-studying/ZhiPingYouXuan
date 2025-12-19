@@ -26,7 +26,7 @@ public interface AiReviewService {
      * @param shopId     商家ID
      * @param preference 用户偏好关键词（如“辣”“微辣”“不辣”“环境”），可空
      * @param limit      返回数量上限
-     * @return 推荐点评列表（已按匹配度/点赞/时间排序）
+     * @return 推荐点评列表（包含点评与推荐理由），已按匹配度/点赞/时间排序
      */
-    java.util.List<com.demo.dp.domain.entity.Review> recommendReviews(Long userId, Long shopId, String preference, int limit);
+    java.util.List<com.demo.dp.dto.AiRecommendItemResponse> recommendReviews(Long userId, Long shopId, String preference, int limit);
 }

@@ -3,7 +3,7 @@ package com.demo.dp.controller;
 import com.demo.dp.domain.entity.Review;
 import com.demo.dp.dto.AiDraftRequest;
 import com.demo.dp.dto.AiDraftResponse;
-import com.demo.dp.dto.AiRecommendRequest;
+import com.demo.dp.dto.AiRecommendItemResponse;
 import com.demo.dp.dto.ReviewCreateRequest;
 import com.demo.dp.service.AiReviewService;
 import com.demo.dp.service.ReviewService;
@@ -101,16 +101,16 @@ public class ReviewController {
      * <p>路径：GET /api/shops/{shopId}/reviews/recommend
      * <p>认证：可匿名；有登录态时可带 userId 做后续个性化扩展。
      * <p>入参：preference（偏好关键词，可选），limit（数量，可选，默认 3）
-     * <p>出参：点评列表
+     * <p>出参：点评+推荐理由列表
      */
     @GetMapping("/recommend")
-    public ResponseEntity<List<Review>> recommend(@PathVariable Long shopId,
-                                                  @RequestParam(required = false) String preference,
-                                                  @RequestParam(required = false, defaultValue = "3") Integer limit,
-                                                  Authentication authentication) {
+    public ResponseEntity<List<AiRecommendItemResponse>> recommend(@PathVariable Long shopId,
+                                                                   @RequestParam(required = false) String preference,
+                                                                   @RequestParam(required = false, defaultValue = "3") Integer limit,
+                                                                   Authentication authentication) {
         Long userId = authentication == null ? null : Long.parseLong(authentication.getName());
         int safeLimit = limit == null ? 3 : limit;
-        List<Review> result = aiReviewService.recommendReviews(userId, shopId, preference, safeLimit);
+        List<AiRecommendItemResponse> result = aiReviewService.recommendReviews(userId, shopId, preference, safeLimit);
         return ResponseEntity.ok(result);
     }
 }

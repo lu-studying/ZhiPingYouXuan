@@ -127,11 +127,30 @@ Body: { "preference": "偏辣" }
   - `preference`（可选，如 "辣"、"微辣"、"不辣"、"环境"）
   - `limit`（可选，默认 3，最大 10）
 
-### 用例4.1 基于偏好的推荐
+### 用例4.1 基于偏好的推荐（含推荐理由）
 ```
 GET /api/shops/1/reviews/recommend?preference=辣&limit=3
 ```
-期望：HTTP 200，返回 1~3 条点评，命中偏好关键词优先。
+期望：
+- HTTP 200；
+- 返回数组，每一项结构类似：
+  ```json
+  {
+    "review": {
+      "id": 10,
+      "shopId": 1,
+      "userId": 3,
+      "rating": 5,
+      "content": "这家火锅很辣很过瘾，服务也不错",
+      "images": "[]",
+      "isAiGenerated": false,
+      "likeCount": 12,
+      "status": 1,
+      "createdAt": "2025-12-15T19:30:00"
+    },
+    "reason": "因为你是「爱吃辣」类型的用户，这家店被标记为：火锅、辣；这条点评里提到了「辣」。"
+  }
+  ```
 
 ### 用例4.2 兜底推荐（无偏好）
 ```
@@ -176,6 +195,23 @@ GET /api/shops/1/reviews/recommend?preference=辣&limit=3
 GET /api/shops/1/reviews/recommend?preference=不存在的口味&limit=3
 ```
 期望：HTTP 200，回落到正文 LIKE 或热门兜底，结果非空（若店内有点评），不报错。
+
+### 用例4.7 基于用户/商家标签自动推断偏好（不传 preference，含推荐理由）
+- 前置条件：
+  - 已存在用户并登录；
+  - 已通过标签接口为当前用户绑定了“爱吃辣”标签，例如：
+    - `POST /api/users/me/tags`，Body：`{"tagIds":[tagId_爱吃辣]}`；
+  - 已通过标签接口为商家 `shopId=1` 绑定了“火锅”“辣”等标签：
+    - `POST /api/shops/1/tags`，Body：`{"tagIds":[tagId_火锅, tagId_辣]}`；
+  - 商家已有多条包含“辣”相关内容的点评。
+- 请求：
+  - 方法：`GET`
+  - URL：`/api/shops/1/reviews/recommend`
+  - Header：`Authorization: Bearer <token>`（用于获取 userId 和其标签）
+- 期望：
+  - HTTP 200；
+  - 服务端在未显式传入 `preference` 的情况下，能根据用户标签和商家标签推断出偏好关键词（如“辣”）；
+  - 返回的每个数组元素中 `review` 字段为点评内容，`reason` 字段中包含类似“因为你是「爱吃辣」类型的用户，这家店被标记为：火锅、辣；这条点评里提到了「辣」。”的推荐理由。
 
 ---
 

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.UserTagMapper">
+
+    <!-- 结果映射：UserTag 实体 -->
+    <resultMap id="UserTagResultMap" type="com.demo.dp.domain.entity.UserTag">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="weight" column="weight"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 按用户查询标签关联 -->
+    <select id="findByUserId" resultMap="UserTagResultMap">
+        SELECT id, user_id, tag_id, weight, updated_at
+        FROM user_tag
+        WHERE user_id = #{userId}
+        ORDER BY updated_at DESC
+    </select>
+
+    <!-- 批量插入用户标签关联 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_tag (user_id, tag_id, weight, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.tagId}, COALESCE(#{item.weight}, 1), NOW())
+        </foreach>
+    </insert>
+
+    <!-- 删除用户所有标签关联 -->
+    <delete id="deleteByUserId">
+        DELETE FROM user_tag
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>
+
+

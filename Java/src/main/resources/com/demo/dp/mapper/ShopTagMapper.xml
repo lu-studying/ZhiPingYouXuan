@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.ShopTagMapper">
+
+    <!-- 结果映射：ShopTag 实体 -->
+    <resultMap id="ShopTagResultMap" type="com.demo.dp.domain.entity.ShopTag">
+        <id property="id" column="id"/>
+        <result property="shopId" column="shop_id"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="weight" column="weight"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 按商家查询标签关联 -->
+    <select id="findByShopId" resultMap="ShopTagResultMap">
+        SELECT id, shop_id, tag_id, weight, updated_at
+        FROM shop_tag
+        WHERE shop_id = #{shopId}
+        ORDER BY updated_at DESC
+    </select>
+
+    <!-- 批量插入商家标签关联 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO shop_tag (shop_id, tag_id, weight, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.shopId}, #{item.tagId}, COALESCE(#{item.weight}, 1), NOW())
+        </foreach>
+    </insert>
+
+    <!-- 删除商家所有标签关联 -->
+    <delete id="deleteByShopId">
+        DELETE FROM shop_tag
+        WHERE shop_id = #{shopId}
+    </delete>
+
+</mapper>
+
+
