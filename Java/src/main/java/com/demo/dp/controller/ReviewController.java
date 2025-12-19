@@ -15,10 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 商家点评相关接口。
- * 后续可增加排序、过滤、AI 推荐等参数。
- */
+    /**
+     * 商家点评相关接口。
+     * 后续可增加排序、过滤、AI 推荐、点赞等参数。
+     */
 @RestController
 @RequestMapping("/api/shops/{shopId}/reviews")
 public class ReviewController {
@@ -59,6 +59,22 @@ public class ReviewController {
         Long userId = Long.parseLong(authentication.getName());
         Review saved = reviewService.createReview(userId, shopId, req.getRating(), req.getContent(), req.getImages());
         return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * 点赞指定点评。
+     *
+     * <p>路径：POST /api/shops/{shopId}/reviews/{reviewId}/like
+     * <p>认证：需要用户登录（JWT），从 Authentication 读取 userId。
+     * <p>说明：MVP 实现为简单的 like_count 自增，未做防重复点赞。
+     */
+    @PostMapping("/{reviewId}/like")
+    public ResponseEntity<?> like(@PathVariable Long shopId,
+                                  @PathVariable Long reviewId,
+                                  Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        reviewService.likeReview(userId, reviewId);
+        return ResponseEntity.ok(java.util.Map.of("message", "点赞成功"));
     }
 
     /**

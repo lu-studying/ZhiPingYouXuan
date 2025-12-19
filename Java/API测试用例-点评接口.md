@@ -371,3 +371,63 @@ Authorization: Bearer <token>
   - HTTP 200；
   - 服务端将 limit 归一为最小值 1；
   - 如果店内有点评，返回 1 条记录。
+
+---
+
+## 8) 点评点赞接口
+
+### 接口信息
+- 方法：`POST`
+- URL：`/api/shops/{shopId}/reviews/{reviewId}/like`
+- 认证：是（JWT）
+- 功能：对某条点评进行点赞，当前实现为简单的 `like_count` 自增（未做防重复点赞）
+
+### 用例8.1 正常点赞
+- 场景：用户在店铺详情页对一条有效点评进行点赞。
+- 前置条件：
+  - 店铺 `shopId=1` 存在；
+  - 点评 `reviewId=10` 存在且 `status=1`。
+- 请求：
+  - 方法：`POST`
+  - URL：`/api/shops/1/reviews/10/like`
+  - Header：`Authorization: Bearer <token>`
+  - Body：无
+- 期望：
+  - HTTP 200；
+  - 响应：
+    ```json
+    { "message": "点赞成功" }
+    ```
+  - 再次查询该点评时，`likeCount` 比点赞前大 1。
+
+### 用例8.2 点赞不存在的点评
+- 场景：点评ID不存在或已被删除。
+- 请求：
+  - 方法：`POST`
+  - URL：`/api/shops/1/reviews/99999/like`
+  - Header：`Authorization: Bearer <token>`
+- 期望：
+  - HTTP 400 或 404（当前实现抛出 RuntimeException，建议在全局异常中映射为 400/404）；
+  - 错误信息中包含“点评不存在或已下线”类似提示。
+
+### 用例8.3 未登录用户点赞
+- 场景：前端未携带 JWT Token。
+- 请求：
+  - 方法：`POST`
+  - URL：`/api/shops/1/reviews/10/like`
+  - Header：无 `Authorization`
+- 期望：
+  - HTTP 403；
+  - 响应提示未认证或没有权限（`Access Denied`）。
+
+### 用例8.4 多次点赞（MVP 阶段允许）
+- 场景：同一用户连续点击点赞按钮多次。
+- 请求：
+  - 方法：`POST`
+  - URL：`/api/shops/1/reviews/10/like`
+  - Header：`Authorization: Bearer <token>`
+  - 连续调用多次。
+- 期望：
+  - 每次请求均返回 HTTP 200 和 `{"message":"点赞成功"}`；
+  - 点评的 `likeCount` 每次都自增 1。
+  - （备注：当前为 MVP 行为，后续可以通过新增“点赞表”来限制一人只能点一次。）

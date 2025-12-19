@@ -71,6 +71,27 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
+     * 点赞点评：当前实现为简单的 like_count 自增，未做防重复点赞。
+     *
+     * @param userId   点赞用户ID
+     * @param reviewId 点评ID
+     */
+    @Override
+    @Transactional
+    public void likeReview(Long userId, Long reviewId) {
+        // 检查点评是否存在且为正常状态
+        Review review = reviewMapper.findById(reviewId);
+        if (review == null || review.getStatus() == null || review.getStatus() != 1) {
+            throw new RuntimeException("点评不存在或已下线，ID: " + reviewId);
+        }
+        // TODO: 可在此处增加 userId + reviewId 维度的防重复点赞逻辑（新增点赞表），当前为简单自增
+        int rows = reviewMapper.increaseLikeCount(reviewId);
+        if (rows == 0) {
+            throw new RuntimeException("点赞失败，点评ID: " + reviewId);
+        }
+    }
+
+    /**
      * 关键词抽取：基于规则的简单命中，用于 MVP。
      * 可后续替换为 NLP/LLM 标注。
      */

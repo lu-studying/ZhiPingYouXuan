@@ -69,5 +69,12 @@
         LIMIT #{limit}
     </select>
 
+    <!-- 点赞计数自增 -->
+    <update id="increaseLikeCount">
+        UPDATE review
+        SET like_count = like_count + 1
+        WHERE id = #{id}
+    </update>
+
 </mapper>
 

@@ -55,5 +55,13 @@ public interface ReviewMapper {
      */
     List<Review> findTopByShop(@Param("shopId") Long shopId,
                                @Param("limit") int limit);
+
+    /**
+     * 点赞计数自增：like_count = like_count + 1。
+     *
+     * @param id 点评ID
+     * @return 受影响行数（1表示成功，0表示未找到）
+     */
+    int increaseLikeCount(@Param("id") Long id);
 }
 
