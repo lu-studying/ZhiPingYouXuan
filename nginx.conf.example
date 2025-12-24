@@ -1,0 +1,51 @@
+# Nginx 配置文件示例
+# 适用于：前端静态文件 + 后端 API 反向代理
+
+server {
+    listen 80;
+    server_name localhost;
+
+    # 前端静态文件目录（生产环境构建后的 dist 目录）
+    root /path/to/Vue/dist;
+    index index.html;
+
+    # 前端路由：所有前端路由都返回 index.html（Vue Router 需要）
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 代理：所有 /api 请求转发到后端
+    location /api {
+        # 代理到后端 Spring Boot 服务
+        proxy_pass http://localhost:8080;
+        
+        # 代理请求头设置
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket 支持（如果需要）
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # 静态资源缓存（CSS、JS、图片等）
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+}
+
