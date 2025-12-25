@@ -39,11 +39,11 @@ public class UserServiceImpl implements UserService {
         // 重复校验
         if (mobileOrEmail != null && mobileOrEmail.contains("@")) {
             if (userMapper.findByEmail(mobileOrEmail) != null) {
-                throw new IllegalArgumentException("email already exists");
+                throw new IllegalArgumentException("该邮箱已存在，请前往登录");
             }
         } else {
             if (userMapper.findByMobile(mobileOrEmail) != null) {
-                throw new IllegalArgumentException("mobile already exists");
+                throw new IllegalArgumentException("该电话号码已存在，请前往登录");
             }
         }
         User u = new User();

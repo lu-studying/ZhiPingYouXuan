@@ -38,7 +38,7 @@ jwt:
   # 使用 Base64 编码的密钥，至少 32 字节（256 bit）解码长度
   # 示例值对应原文 "very-strong-secret-key-32bytes!!"
   secret: "dmVyeS1zdHJvbmctc2VjcmV0LWtleS0zMmJ5dGVzISE="
-  expiration-seconds: 86400
+  expiration-seconds: 21600
 
 # AI 调用配置
 # 说明：

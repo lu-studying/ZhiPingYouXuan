@@ -10,6 +10,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import store from '@/store'
+import { isTokenExpired } from '@/utils/jwt'
 
 /**
  * 路由配置数组
@@ -31,6 +32,16 @@ const routes = [
       requiresAuth: false // 登录页不需要认证，设置为 false
     }
   },
+  // 注册页路由
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/auth/Register.vue'), // 懒加载
+    meta: {
+      title: '注册', // 页面标题
+      requiresAuth: false // 注册页不需要认证，设置为 false
+    }
+  },
   // 根路径重定向到仪表盘
   {
     path: '/',
@@ -46,7 +57,37 @@ const routes = [
       requiresAuth: true // 需要登录才能访问，设置为 true
     }
   },
-  // 其他路由将在后续添加（商家管理、点评管理、订单管理等）
+  // 商家管理路由（占位，后续完善）
+  {
+    path: '/shops',
+    name: 'Shops',
+    component: () => import('@/views/shops/List.vue'),
+    meta: {
+      title: '商家管理',
+      requiresAuth: true
+    }
+  },
+  // 点评管理路由（占位，后续完善）
+  {
+    path: '/reviews',
+    name: 'Reviews',
+    component: () => import('@/views/reviews/List.vue'),
+    meta: {
+      title: '点评管理',
+      requiresAuth: true
+    }
+  },
+  // 订单管理路由（占位，后续完善）
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('@/views/orders/List.vue'),
+    meta: {
+      title: '订单管理',
+      requiresAuth: true
+    }
+  },
+  // 其他路由将在后续添加
   
   // 404 页面：匹配所有未定义的路由，重定向到仪表盘
   {
@@ -85,7 +126,23 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const isAuthenticated = !!token // 转换为布尔值
 
-  // 情况1：目标路由需要认证，但用户未登录
+  // 如果存在 token，检查是否过期
+  if (token && isTokenExpired(token)) {
+    // Token 已过期，清除本地存储
+    localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
+    
+    // 如果目标路由需要认证，跳转到登录页
+    if (to.meta.requiresAuth) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath } // 保存原始路径，登录后可以跳转回去
+      })
+      return
+    }
+  }
+
+  // 情况1：目标路由需要认证，但用户未登录（或 token 已过期）
   if (to.meta.requiresAuth && !isAuthenticated) {
     // 跳转到登录页，并保存原始路径（登录后可以跳转回去）
     next({
@@ -93,9 +150,9 @@ router.beforeEach((to, from, next) => {
       query: { redirect: to.fullPath } // 保存完整路径，如 /dashboard?page=1
     })
   } 
-  // 情况2：已登录用户访问登录页（避免重复登录）
-  else if (to.path === '/login' && isAuthenticated) {
-    // 直接跳转到仪表盘
+  // 情况2：已登录用户访问登录页或注册页（避免重复登录）
+  else if ((to.path === '/login' || to.path === '/register') && isAuthenticated && !isTokenExpired(token)) {
+    // 直接跳转到仪表盘（只有在 token 有效时才跳转）
     next('/dashboard')
   } 
   // 情况3：其他情况，正常跳转

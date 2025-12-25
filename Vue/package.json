@@ -1,7 +1,7 @@
 {
   "name": "dianping-admin",
   "version": "1.0.0",
-  "description": "点评AI管理后台",
+  "description": "智评优选管理后台",
   "type": "module",
   "scripts": {
     "dev": "vite",
