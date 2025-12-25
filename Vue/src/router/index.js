@@ -57,13 +57,43 @@ const routes = [
       requiresAuth: true // 需要登录才能访问，设置为 true
     }
   },
-  // 商家管理路由（占位，后续完善）
+  // 商家管理路由
   {
     path: '/shops',
     name: 'Shops',
     component: () => import('@/views/shops/List.vue'),
     meta: {
       title: '商家管理',
+      requiresAuth: true
+    }
+  },
+  // 新增商家路由
+  {
+    path: '/shops/create',
+    name: 'ShopCreate',
+    component: () => import('@/views/shops/Create.vue'),
+    meta: {
+      title: '新增商家',
+      requiresAuth: true
+    }
+  },
+  // 商家详情路由
+  {
+    path: '/shops/:id',
+    name: 'ShopDetail',
+    component: () => import('@/views/shops/Detail.vue'),
+    meta: {
+      title: '商家详情',
+      requiresAuth: true
+    }
+  },
+  // 编辑商家路由
+  {
+    path: '/shops/:id/edit',
+    name: 'ShopEdit',
+    component: () => import('@/views/shops/Edit.vue'),
+    meta: {
+      title: '编辑商家',
       requiresAuth: true
     }
   },

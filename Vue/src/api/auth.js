@@ -77,5 +77,7 @@ export function logout() {
   localStorage.removeItem('token')
   // 清除本地存储的用户信息
   localStorage.removeItem('userInfo')
+  // 清除登录时间
+  localStorage.removeItem('loginTime')
 }
 

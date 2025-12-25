@@ -221,6 +221,9 @@ const handleRegister = async () => {
           }
         })
 
+        // 保存登录时间到 localStorage
+        localStorage.setItem('loginTime', new Date().toISOString())
+
         // 显示成功提示
         ElMessage.success('注册成功，已自动登录')
 
