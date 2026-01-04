@@ -43,5 +43,29 @@
                 COALESCE(#{status}, 1), NOW(), NOW())
     </insert>
 
+    <!-- 分页查询用户列表（支持关键词搜索） -->
+    <select id="findByConditions" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        FROM user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (mobile LIKE CONCAT('%', #{keyword}, '%') OR email LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计符合条件的用户总数 -->
+    <select id="countByConditions" resultType="long">
+        SELECT COUNT(*)
+        FROM user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (mobile LIKE CONCAT('%', #{keyword}, '%') OR email LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
 </mapper>
 

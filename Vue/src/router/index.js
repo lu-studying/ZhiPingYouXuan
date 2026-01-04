@@ -42,82 +42,117 @@ const routes = [
       requiresAuth: false // 注册页不需要认证，设置为 false
     }
   },
-  // 根路径重定向到仪表盘
+  // 主布局路由（包含导航菜单）
   {
     path: '/',
-    redirect: '/dashboard' // 访问根路径时自动跳转到仪表盘
-  },
-  // 仪表盘路由
-  {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: () => import('@/views/dashboard/Index.vue'), // 懒加载
+    component: () => import('@/layouts/MainLayout.vue'),
+    redirect: '/dashboard',
     meta: {
-      title: '仪表盘',
-      requiresAuth: true // 需要登录才能访问，设置为 true
-    }
-  },
-  // 商家管理路由
-  {
-    path: '/shops',
-    name: 'Shops',
-    component: () => import('@/views/shops/List.vue'),
-    meta: {
-      title: '商家管理',
       requiresAuth: true
-    }
+    },
+    children: [
+      // 仪表盘路由
+      {
+        path: '/dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/dashboard/Index.vue'),
+        meta: {
+          title: '仪表盘',
+          requiresAuth: true
+        }
+      },
+      // 商家管理路由
+      {
+        path: '/shops',
+        name: 'Shops',
+        component: () => import('@/views/shops/List.vue'),
+        meta: {
+          title: '商家管理',
+          requiresAuth: true
+        }
+      },
+      // 新增商家路由
+      {
+        path: '/shops/create',
+        name: 'ShopCreate',
+        component: () => import('@/views/shops/Create.vue'),
+        meta: {
+          title: '新增商家',
+          requiresAuth: true
+        }
+      },
+      // 商家详情路由
+      {
+        path: '/shops/:id',
+        name: 'ShopDetail',
+        component: () => import('@/views/shops/Detail.vue'),
+        meta: {
+          title: '商家详情',
+          requiresAuth: true
+        }
+      },
+      // 编辑商家路由
+      {
+        path: '/shops/:id/edit',
+        name: 'ShopEdit',
+        component: () => import('@/views/shops/Edit.vue'),
+        meta: {
+          title: '编辑商家',
+          requiresAuth: true
+        }
+      },
+      // 点评管理路由
+      {
+        path: '/reviews',
+        name: 'Reviews',
+        component: () => import('@/views/reviews/List.vue'),
+        meta: {
+          title: '点评管理',
+          requiresAuth: true
+        }
+      },
+      // 订单管理路由
+      {
+        path: '/orders',
+        name: 'Orders',
+        component: () => import('@/views/orders/List.vue'),
+        meta: {
+          title: '订单管理',
+          requiresAuth: true
+        }
+      },
+      // 用户管理路由
+      {
+        path: '/users',
+        name: 'Users',
+        component: () => import('@/views/users/List.vue'),
+        meta: {
+          title: '用户管理',
+          requiresAuth: true
+        }
+      },
+      // 用户详情路由
+      {
+        path: '/users/:id',
+        name: 'UserDetail',
+        component: () => import('@/views/users/Detail.vue'),
+        meta: {
+          title: '用户详情',
+          requiresAuth: true
+        }
+      },
+      // AI 调用日志路由
+      {
+        path: '/ai-logs',
+        name: 'AiLogs',
+        component: () => import('@/views/ai-logs/List.vue'),
+        meta: {
+          title: 'AI 调用日志',
+          requiresAuth: true
+        }
+      }
+    ]
   },
-  // 新增商家路由
-  {
-    path: '/shops/create',
-    name: 'ShopCreate',
-    component: () => import('@/views/shops/Create.vue'),
-    meta: {
-      title: '新增商家',
-      requiresAuth: true
-    }
-  },
-  // 商家详情路由
-  {
-    path: '/shops/:id',
-    name: 'ShopDetail',
-    component: () => import('@/views/shops/Detail.vue'),
-    meta: {
-      title: '商家详情',
-      requiresAuth: true
-    }
-  },
-  // 编辑商家路由
-  {
-    path: '/shops/:id/edit',
-    name: 'ShopEdit',
-    component: () => import('@/views/shops/Edit.vue'),
-    meta: {
-      title: '编辑商家',
-      requiresAuth: true
-    }
-  },
-  // 点评管理路由（占位，后续完善）
-  {
-    path: '/reviews',
-    name: 'Reviews',
-    component: () => import('@/views/reviews/List.vue'),
-    meta: {
-      title: '点评管理',
-      requiresAuth: true
-    }
-  },
-  // 订单管理路由（占位，后续完善）
-  {
-    path: '/orders',
-    name: 'Orders',
-    component: () => import('@/views/orders/List.vue'),
-    meta: {
-      title: '订单管理',
-      requiresAuth: true
-    }
-  },
-  // 其他路由将在后续添加
   
   // 404 页面：匹配所有未定义的路由，重定向到仪表盘
   {

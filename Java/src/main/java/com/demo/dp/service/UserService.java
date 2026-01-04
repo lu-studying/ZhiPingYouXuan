@@ -38,4 +38,30 @@ public interface UserService {
      * @return 用户对象，如果不存在则返回空
      */
     Optional<User> findByEmail(String email);
+
+    /**
+     * 分页查询用户列表（支持关键词搜索）。
+     * 
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @param keyword 搜索关键词（在手机号和邮箱中搜索），可选
+     * @return 用户列表
+     */
+    java.util.List<User> listUsers(int page, int size, String keyword);
+
+    /**
+     * 统计符合条件的用户总数（用于分页计算）。
+     * 
+     * @param keyword 搜索关键词（在手机号和邮箱中搜索），可选
+     * @return 用户总数
+     */
+    long countUsers(String keyword);
+
+    /**
+     * 根据用户ID查询用户详情。
+     * 
+     * @param id 用户ID
+     * @return 用户对象，如果不存在则返回空
+     */
+    Optional<User> findById(Long id);
 }

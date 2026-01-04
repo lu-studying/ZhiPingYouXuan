@@ -41,5 +41,22 @@ public interface OrderRecordMapper {
      */
     OrderRecord findLatestByUserAndShop(@Param("userId") Long userId,
                                         @Param("shopId") Long shopId);
+
+    /**
+     * 统计所有订单总数。
+     *
+     * @return 订单总数
+     */
+    long countAll();
+
+    /**
+     * 统计指定日期范围内创建的订单总数。
+     *
+     * @param startDate 开始时间（包含）
+     * @param endDate 结束时间（包含）
+     * @return 订单总数
+     */
+    long countByDateRange(@Param("startDate") java.time.LocalDateTime startDate,
+                          @Param("endDate") java.time.LocalDateTime endDate);
 }
 

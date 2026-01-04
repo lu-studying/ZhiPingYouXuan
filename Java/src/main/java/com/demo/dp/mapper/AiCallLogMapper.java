@@ -31,5 +31,48 @@ public interface AiCallLogMapper {
      * @return 日志实体，不存在则返回 null
      */
     AiCallLog findById(@Param("id") Long id);
+
+    /**
+     * 统计所有 AI 调用日志总数。
+     *
+     * @return 调用日志总数
+     */
+    long countAll();
+
+    /**
+     * 根据状态统计 AI 调用日志数量。
+     *
+     * @param status 状态：1=成功，0=失败
+     * @return 符合条件的调用日志数量
+     */
+    long countByStatus(@Param("status") Integer status);
+
+    /**
+     * 分页查询 AI 调用日志列表（支持多条件筛选）。
+     *
+     * @param offset 查询偏移量
+     * @param limit 每页数量
+     * @param type 调用类型（可选）：generate/recommend
+     * @param status 状态（可选）：1=成功，0=失败
+     * @param userId 用户ID（可选）
+     * @return 调用日志列表
+     */
+    java.util.List<AiCallLog> findByConditions(@Param("offset") int offset,
+                                               @Param("limit") int limit,
+                                               @Param("type") String type,
+                                               @Param("status") Integer status,
+                                               @Param("userId") Long userId);
+
+    /**
+     * 统计符合条件的 AI 调用日志总数（用于分页计算）。
+     *
+     * @param type 调用类型（可选）
+     * @param status 状态（可选）
+     * @param userId 用户ID（可选）
+     * @return 符合条件的调用日志总数
+     */
+    long countByConditions(@Param("type") String type,
+                          @Param("status") Integer status,
+                          @Param("userId") Long userId);
 }
 

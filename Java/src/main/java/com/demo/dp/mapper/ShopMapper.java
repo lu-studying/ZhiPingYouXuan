@@ -157,5 +157,15 @@ public interface ShopMapper {
                           @Param("keyword") String keyword,
                           @Param("minScore") Double minScore,
                           @Param("maxPrice") Double maxPrice);
+
+    /**
+     * 统计指定日期范围内创建的商家总数（status=1）。
+     *
+     * @param startDate 开始时间（包含）
+     * @param endDate 结束时间（包含）
+     * @return 商家总数
+     */
+    long countByDateRange(@Param("startDate") java.time.LocalDateTime startDate,
+                         @Param("endDate") java.time.LocalDateTime endDate);
 }
 

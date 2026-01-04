@@ -29,5 +29,54 @@
         WHERE id = #{id}
     </select>
 
+    <!-- 统计所有 AI 调用日志总数 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM ai_call_log
+    </select>
+
+    <!-- 根据状态统计 AI 调用日志数量 -->
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM ai_call_log
+        WHERE status = #{status}
+    </select>
+
+    <!-- 分页查询 AI 调用日志列表（支持多条件筛选） -->
+    <select id="findByConditions" resultMap="AiCallLogResultMap">
+        SELECT id, user_id, type, prompt, response_ref, latency_ms, status, created_at
+        FROM ai_call_log
+        <where>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计符合条件的 AI 调用日志总数 -->
+    <select id="countByConditions" resultType="long">
+        SELECT COUNT(*)
+        FROM ai_call_log
+        <where>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
 </mapper>
 

@@ -76,5 +76,37 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 统计所有正常状态的点评总数 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM review
+        WHERE status = 1
+    </select>
+
+    <!-- 统计指定日期范围内创建的点评总数 -->
+    <select id="countByDateRange" resultType="long">
+        SELECT COUNT(*)
+        FROM review
+        WHERE status = 1
+          AND created_at >= #{startDate}
+          AND created_at &lt;= #{endDate}
+    </select>
+
+    <!-- 根据用户 ID 分页查询点评列表 -->
+    <select id="findByUserId" resultMap="ReviewResultMap">
+        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
+        FROM review
+        WHERE user_id = #{userId} AND status = 1
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计用户点评总数 -->
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM review
+        WHERE user_id = #{userId} AND status = 1
+    </select>
+
 </mapper>
 

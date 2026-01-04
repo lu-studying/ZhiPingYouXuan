@@ -50,7 +50,7 @@
               <el-icon :size="32"><ShopFilled /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.shops.total || 0 }}</div>
+              <div class="stat-value">{{ stats.shopCount || 0 }}</div>
               <div class="stat-label">商家总数</div>
             </div>
           </div>
@@ -62,21 +62,21 @@
         </el-card>
       </el-col>
 
-      <!-- 正常商家数卡片 -->
+      <!-- AI 调用总次数卡片 -->
       <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <div class="stat-icon" style="background-color: #67c23a;">
-              <el-icon :size="32"><CircleCheckFilled /></el-icon>
+            <div class="stat-icon" style="background-color: #9c27b0;">
+              <el-icon :size="32"><Star /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.shops.active || 0 }}</div>
-              <div class="stat-label">正常商家</div>
+              <div class="stat-value">{{ stats.aiCallCount || 0 }}</div>
+              <div class="stat-label">AI 调用次数</div>
             </div>
           </div>
           <div class="stat-footer">
-            <el-link type="primary" :underline="false" @click="goToShops">
-              查看详情 <el-icon><ArrowRight /></el-icon>
+            <el-link type="primary" :underline="false" @click="goToAiLogs">
+              查看日志 <el-icon><ArrowRight /></el-icon>
             </el-link>
           </div>
         </el-card>
@@ -90,7 +90,7 @@
               <el-icon :size="32"><ChatDotRound /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.reviews.total || '-' }}</div>
+              <div class="stat-value">{{ stats.reviewCount || 0 }}</div>
               <div class="stat-label">点评总数</div>
             </div>
           </div>
@@ -107,10 +107,10 @@
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-icon" style="background-color: #f56c6c;">
-              <el-icon :size="32"><DocumentFilled /></el-icon>
+              <el-icon :size="32"><Document /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.orders.total || '-' }}</div>
+              <div class="stat-value">{{ stats.orderCount || 0 }}</div>
               <div class="stat-label">订单总数</div>
             </div>
           </div>
@@ -118,6 +118,70 @@
             <el-link type="primary" :underline="false" @click="goToOrders">
               查看详情 <el-icon><ArrowRight /></el-icon>
             </el-link>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- AI 统计卡片区域 -->
+    <el-row :gutter="20" class="stats-row">
+      <!-- 正常商家数卡片 -->
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon" style="background-color: #67c23a;">
+              <el-icon :size="32"><CircleCheckFilled /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.todayNewShops || 0 }}</div>
+              <div class="stat-label">今日新增商家</div>
+            </div>
+          </div>
+     
+        </el-card>
+      </el-col>
+
+      <!-- AI 调用成功率卡片 -->
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon" style="background-color: #00bcd4;">
+              <el-icon :size="32"><TrendCharts /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ formatPercentage(stats.aiCallSuccessRate) }}</div>
+              <div class="stat-label">AI 调用成功率</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 今日新增点评卡片 -->
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon" style="background-color: #ff9800;">
+              <el-icon :size="32"><ChatDotRound /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.todayNewReviews || 0 }}</div>
+              <div class="stat-label">今日新增点评</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 今日新增订单卡片 -->
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-icon" style="background-color: #4caf50;">
+              <el-icon :size="32"><Document /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.todayNewOrders || 0 }}</div>
+              <div class="stat-label">今日新增订单</div>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -184,8 +248,16 @@
               点评管理
             </el-button>
             <el-button type="info" size="large" @click="goToOrders">
-              <el-icon><DocumentFilled /></el-icon>
+              <el-icon><Document /></el-icon>
               订单管理
+            </el-button>
+            <el-button type="primary" size="large" @click="goToUsers">
+              <el-icon><User /></el-icon>
+              用户管理
+            </el-button>
+            <el-button type="success" size="large" @click="goToAiLogs">
+              <el-icon><Star /></el-icon>
+              AI调用日志
             </el-button>
           </div>
         </el-card>
@@ -212,6 +284,7 @@ import { ElMessage } from 'element-plus'
 // Element Plus 图标（已在 main.js 中全局注册，可以直接使用）
 // 注意：图标组件名称需要与 Element Plus Icons 库中的名称一致
 import { listShops, getShopCount } from '@/api/shops'
+import { getDashboardStats } from '@/api/dashboard'
 import { isTokenExpired } from '@/utils/jwt'
 import { logout } from '@/api/auth'
 
@@ -251,16 +324,14 @@ const loginTime = computed(() => {
 
 // 统计数据
 const stats = reactive({
-  shops: {
-    total: 0,      // 商家总数
-    active: 0      // 正常商家数（status=1）
-  },
-  reviews: {
-    total: '-'     // 点评总数（需要遍历商家获取，暂时显示"-"）
-  },
-  orders: {
-    total: '-'     // 订单总数（需要遍历商家获取，暂时显示"-"）
-  }
+  shopCount: 0,              // 商家总数
+  reviewCount: 0,            // 点评总数
+  orderCount: 0,             // 订单总数
+  aiCallCount: 0,            // AI 调用总次数
+  aiCallSuccessRate: 0,      // AI 调用成功率（0.0 - 1.0）
+  todayNewShops: 0,          // 今日新增商家数
+  todayNewReviews: 0,        // 今日新增点评数
+  todayNewOrders: 0          // 今日新增订单数
 })
 
 // 最近商家列表
@@ -275,30 +346,29 @@ const loading = reactive({
  * 加载统计数据
  * 
  * 功能：
- * 1. 获取商家总数
- * 2. 获取正常商家数
- * 3. 获取最近商家列表
+ * 1. 获取仪表盘统计数据（商家数、点评数、订单数、AI调用统计、今日新增数据等）
+ * 2. 获取最近商家列表
  */
 const loadStats = async () => {
   loading.shops = true
 
   try {
-    // 获取商家列表（第一页，每页10条，用于显示最近商家）
+    // 1. 获取仪表盘统计数据
+    const statsResponse = await getDashboardStats()
+    
+    // 更新统计数据
+    stats.shopCount = statsResponse.shopCount || 0
+    stats.reviewCount = statsResponse.reviewCount || 0
+    stats.orderCount = statsResponse.orderCount || 0
+    stats.aiCallCount = statsResponse.aiCallCount || 0
+    stats.aiCallSuccessRate = statsResponse.aiCallSuccessRate || 0
+    stats.todayNewShops = statsResponse.todayNewShops || 0
+    stats.todayNewReviews = statsResponse.todayNewReviews || 0
+    stats.todayNewOrders = statsResponse.todayNewOrders || 0
+    
+    // 2. 获取最近商家列表（第一页，每页10条）
     const shopsResponse = await listShops({ page: 0, size: 10 })
-    
-    // 更新商家总数
-    stats.shops.total = shopsResponse.total || 0
-    
-    // 计算正常商家数（status=1）
-    const activeShops = shopsResponse.content?.filter(shop => shop.status === 1) || []
-    stats.shops.active = activeShops.length
-    
-    // 更新最近商家列表
     recentShops.value = shopsResponse.content || []
-    
-    // 注意：点评总数和订单总数需要遍历所有商家才能统计
-    // 由于后端没有提供全量统计接口，这里暂时显示"-"
-    // 后续可以通过后端新增统计接口来完善
     
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -327,6 +397,33 @@ const goToReviews = () => {
  */
 const goToOrders = () => {
   router.push('/orders')
+}
+
+/**
+ * 跳转到用户管理页面
+ */
+const goToUsers = () => {
+  router.push('/users')
+}
+
+/**
+ * 跳转到 AI 调用日志页面
+ */
+const goToAiLogs = () => {
+  router.push('/ai-logs')
+}
+
+/**
+ * 格式化百分比
+ * 
+ * @param {number} rate - 成功率（0.0 - 1.0）
+ * @returns {string} 格式化后的百分比字符串（如 "95.5%"）
+ */
+const formatPercentage = (rate) => {
+  if (rate === null || rate === undefined) {
+    return '0%'
+  }
+  return (rate * 100).toFixed(1) + '%'
 }
 
 /**
@@ -620,7 +717,7 @@ onUnmounted(() => {
 /* 快速操作区域 */
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 

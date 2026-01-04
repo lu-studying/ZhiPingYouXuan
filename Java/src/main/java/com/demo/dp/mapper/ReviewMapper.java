@@ -63,5 +63,42 @@ public interface ReviewMapper {
      * @return 受影响行数（1表示成功，0表示未找到）
      */
     int increaseLikeCount(@Param("id") Long id);
+
+    /**
+     * 统计所有正常状态的点评总数（status=1）。
+     *
+     * @return 点评总数
+     */
+    long countAll();
+
+    /**
+     * 统计指定日期范围内创建的点评总数（status=1）。
+     *
+     * @param startDate 开始时间（包含）
+     * @param endDate 结束时间（包含）
+     * @return 点评总数
+     */
+    long countByDateRange(@Param("startDate") java.time.LocalDateTime startDate,
+                         @Param("endDate") java.time.LocalDateTime endDate);
+
+    /**
+     * 根据用户 ID 分页查询点评列表。
+     *
+     * @param userId 用户ID
+     * @param offset 查询偏移量
+     * @param limit 每页数量
+     * @return 点评列表
+     */
+    List<Review> findByUserId(@Param("userId") Long userId,
+                              @Param("offset") int offset,
+                              @Param("limit") int limit);
+
+    /**
+     * 统计用户点评总数（status=1）。
+     *
+     * @param userId 用户ID
+     * @return 点评总数
+     */
+    long countByUserId(@Param("userId") Long userId);
 }
 

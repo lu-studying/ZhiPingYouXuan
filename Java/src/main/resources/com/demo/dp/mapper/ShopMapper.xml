@@ -234,5 +234,27 @@
         </where>
     </select>
 
+    <!--
+        统计指定日期范围内创建的商家总数
+        
+        id="countByDateRange"：对应 ShopMapper 接口中的 countByDateRange 方法
+        resultType="long"：返回类型为long（整数）
+        
+        SQL说明：
+        1. SELECT COUNT(*)：使用COUNT函数统计符合条件的记录总数
+        2. FROM shop：从shop表统计
+        3. WHERE条件：
+           - status = 1：只统计正常状态的商家
+           - created_at >= #{startDate}：创建时间大于等于开始时间
+           - created_at <= #{endDate}：创建时间小于等于结束时间
+    -->
+    <select id="countByDateRange" resultType="long">
+        SELECT COUNT(*)
+        FROM shop
+        WHERE status = 1
+          AND created_at >= #{startDate}
+          AND created_at &lt;= #{endDate}
+    </select>
+
 </mapper>
 

@@ -104,6 +104,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/shops/*/reviews").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/shops/*/reviews/recommend").permitAll()
 
+                // 仪表盘、用户管理、AI日志查询需要认证（管理端功能）
+                // 注意：这些接口需要登录后才能访问，用于管理端数据展示
+
                 // 其他请求需要认证
                 .anyRequest().authenticated()
             )

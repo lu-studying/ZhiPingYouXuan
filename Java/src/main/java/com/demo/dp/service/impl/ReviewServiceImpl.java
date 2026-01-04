@@ -121,5 +121,30 @@ public class ReviewServiceImpl implements ReviewService {
         }
         return list;
     }
+
+    /**
+     * 分页查询用户点评列表。
+     * 
+     * @param userId 用户ID
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 点评列表
+     */
+    @Override
+    public List<Review> listByUser(Long userId, int page, int size) {
+        int offset = page * size;
+        return reviewMapper.findByUserId(userId, offset, size);
+    }
+
+    /**
+     * 获取用户点评总数。
+     * 
+     * @param userId 用户ID
+     * @return 点评总数
+     */
+    @Override
+    public long countByUserId(Long userId) {
+        return reviewMapper.countByUserId(userId);
+    }
 }
 

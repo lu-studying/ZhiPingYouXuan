@@ -52,5 +52,19 @@
         VALUES (#{shopId}, #{userId}, #{amount}, #{visitTime}, #{items}, NOW())
     </insert>
 
+    <!-- 统计所有订单总数 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM order_record
+    </select>
+
+    <!-- 统计指定日期范围内创建的订单总数 -->
+    <select id="countByDateRange" resultType="long">
+        SELECT COUNT(*)
+        FROM order_record
+        WHERE created_at >= #{startDate}
+          AND created_at &lt;= #{endDate}
+    </select>
+
 </mapper>
 

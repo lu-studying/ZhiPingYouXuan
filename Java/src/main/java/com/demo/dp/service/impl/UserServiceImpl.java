@@ -72,5 +72,22 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.findByEmail(email);
         return Optional.ofNullable(user);
     }
+
+    @Override
+    public java.util.List<User> listUsers(int page, int size, String keyword) {
+        int offset = page * size;
+        return userMapper.findByConditions(offset, size, keyword);
+    }
+
+    @Override
+    public long countUsers(String keyword) {
+        return userMapper.countByConditions(keyword);
+    }
+
+    @Override
+    public Optional<User> findById(Long id) {
+        User user = userMapper.findById(id);
+        return Optional.ofNullable(user);
+    }
 }
 
