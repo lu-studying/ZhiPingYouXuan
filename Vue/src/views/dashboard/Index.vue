@@ -1,42 +1,11 @@
 <template>
   <!-- 仪表盘页面容器 -->
   <div class="dashboard-container">
-    <!-- 页面标题和用户信息 -->
+    <!-- 页面标题 -->
     <div class="dashboard-header">
       <div class="header-left">
         <h1 class="page-title">仪表盘</h1>
         <p class="page-subtitle">数据概览与统计</p>
-      </div>
-      <!-- 用户头像下拉菜单 -->
-      <div class="header-right">
-        <el-dropdown trigger="hover" @command="handleCommand">
-          <div class="user-avatar-wrapper">
-            <el-avatar :size="40" class="user-avatar">
-              <el-icon><UserFilled /></el-icon>
-            </el-avatar>
-            <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item disabled>
-                <div class="user-info-item">
-                  <div class="user-info-label">用户名</div>
-                  <div class="user-info-value">{{ userDisplayName }}</div>
-                </div>
-              </el-dropdown-item>
-              <el-dropdown-item disabled>
-                <div class="user-info-item">
-                  <div class="user-info-label">登录时间</div>
-                  <div class="user-info-value">{{ loginTime }}</div>
-                </div>
-              </el-dropdown-item>
-              <el-dropdown-item divided command="logout">
-                <el-icon><SwitchButton /></el-icon>
-                <span style="margin-left: 8px;">退出登录</span>
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
       </div>
     </div>
 
@@ -47,7 +16,7 @@
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-icon" style="background-color: #409eff;">
-              <el-icon :size="32"><ShopFilled /></el-icon>
+              <el-icon :size="32"><Shop /></el-icon>
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.shopCount || 0 }}</div>
@@ -277,50 +246,32 @@
  * 4. 数据自动刷新
  */
 
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
-// Element Plus 图标（已在 main.js 中全局注册，可以直接使用）
-// 注意：图标组件名称需要与 Element Plus Icons 库中的名称一致
+// Element Plus 图标导入
+import {
+  Shop,
+  CircleCheckFilled,
+  ChatDotRound,
+  Document,
+  Star,
+  TrendCharts,
+  ArrowRight,
+  User,
+  Plus
+} from '@element-plus/icons-vue'
 import { listShops, getShopCount } from '@/api/shops'
 import { getDashboardStats } from '@/api/dashboard'
 import { isTokenExpired } from '@/utils/jwt'
-import { logout } from '@/api/auth'
 
 // 使用 Vue Router
 const router = useRouter()
 
-// 使用 Vuex store（用于获取用户信息和清除登录状态）
+// 使用 Vuex store（用于清除登录状态）
 const store = useStore()
 
-// 获取用户信息
-const userInfo = computed(() => store.getters['auth/userInfo'])
-
-// 计算用户显示名称（手机号或邮箱）
-const userDisplayName = computed(() => {
-  if (userInfo.value && userInfo.value.mobileOrEmail) {
-    return userInfo.value.mobileOrEmail
-  }
-  return '未登录'
-})
-
-// 获取登录时间（从 localStorage 读取，如果不存在则显示当前时间）
-const loginTime = computed(() => {
-  const savedLoginTime = localStorage.getItem('loginTime')
-  if (savedLoginTime) {
-    const date = new Date(savedLoginTime)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
-  return '未知'
-})
 
 // 统计数据
 const stats = reactive({
@@ -435,39 +386,6 @@ const viewShop = (shopId) => {
   router.push(`/shops/${shopId}`)
 }
 
-/**
- * 处理下拉菜单命令
- * 
- * @param {string} command - 命令名称（如 'logout'）
- */
-const handleCommand = (command) => {
-  if (command === 'logout') {
-    handleLogout()
-  }
-}
-
-/**
- * 处理退出登录
- * 
- * 流程：
- * 1. 清除本地存储的 token 和用户信息
- * 2. 清除 Vuex store 中的认证状态
- * 3. 显示成功提示
- * 4. 跳转到登录页
- */
-const handleLogout = () => {
-  // 清除本地存储的 token 和用户信息
-  logout()
-  
-  // 清除 Vuex store 中的认证状态
-  store.dispatch('auth/logout')
-  
-  // 显示成功提示
-  ElMessage.success('已退出登录')
-  
-  // 跳转到登录页
-  router.push('/login')
-}
 
 // Token 过期检查定时器
 let tokenCheckTimer = null
@@ -549,9 +467,6 @@ onUnmounted(() => {
 
 /* 页面头部 */
 .dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 24px;
 }
 
@@ -572,80 +487,6 @@ onUnmounted(() => {
   margin: 0;
 }
 
-/* 用户头像区域 */
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-/* 移除 el-dropdown 的所有边框样式 */
-.header-right :deep(.el-dropdown) {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.header-right :deep(.el-dropdown__caret-button) {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.header-right :deep(.el-dropdown__caret-button:hover),
-.header-right :deep(.el-dropdown__caret-button:focus),
-.header-right :deep(.el-dropdown__caret-button:active) {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.user-avatar-wrapper {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  border: none !important;
-  outline: none !important;
-  transition: background-color 0.3s;
-}
-
-.user-avatar-wrapper:hover {
-  background-color: #f5f7fa;
-}
-
-.user-avatar {
-  background-color: #409eff;
-  color: #ffffff;
-}
-
-.dropdown-icon {
-  margin-left: 8px;
-  color: #909399;
-  font-size: 12px;
-  transition: transform 0.3s;
-}
-
-.user-avatar-wrapper:hover .dropdown-icon {
-  transform: rotate(180deg);
-}
-
-/* 下拉菜单用户信息样式 */
-.user-info-item {
-  padding: 4px 0;
-}
-
-.user-info-label {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 4px;
-}
-
-.user-info-value {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-}
 
 /* 统计卡片行 */
 .stats-row {

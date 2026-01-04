@@ -63,6 +63,12 @@
                     <div class="user-info-value">{{ userDisplayName }}</div>
                   </div>
                 </el-dropdown-item>
+                <el-dropdown-item disabled>
+                  <div class="user-info-item">
+                    <div class="user-info-label">登录时间</div>
+                    <div class="user-info-value">{{ loginTime }}</div>
+                  </div>
+                </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>
                   <span style="margin-left: 8px;">退出登录</span>
@@ -113,6 +119,23 @@ const userDisplayName = computed(() => {
     return userInfo.value.mobileOrEmail
   }
   return '未登录'
+})
+
+// 获取登录时间（从 localStorage 读取，如果不存在则显示当前时间）
+const loginTime = computed(() => {
+  const savedLoginTime = localStorage.getItem('loginTime')
+  if (savedLoginTime) {
+    const date = new Date(savedLoginTime)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  }
+  return '未知'
 })
 
 // 计算当前激活的菜单项
@@ -252,6 +275,25 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+/* 移除 el-dropdown 的所有边框样式 */
+.header-right :deep(.el-dropdown) {
+  border: none !important;
+  outline: none !important;
+}
+
+.header-right :deep(.el-dropdown__caret-button) {
+  border: none !important;
+  outline: none !important;
+}
+
+.header-right :deep(.el-dropdown__caret-button:hover),
+.header-right :deep(.el-dropdown__caret-button:focus),
+.header-right :deep(.el-dropdown__caret-button:active) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* 用户头像区域 */
 .user-avatar-wrapper {
   display: flex;
@@ -259,11 +301,15 @@ onMounted(() => {
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 8px;
+  border: none !important;
+  outline: none !important;
   transition: background-color 0.3s;
 }
 
 .user-avatar-wrapper:hover {
   background-color: #f5f7fa;
+  border: none !important;
+  outline: none !important;
 }
 
 .user-avatar {

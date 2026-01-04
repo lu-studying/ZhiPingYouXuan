@@ -4,8 +4,15 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">AI 调用日志</h1>
-        <p class="page-subtitle">查看和管理 AI 调用记录</p>
+        <div class="title-with-back">
+          <el-button text @click="handleBackToDashboard" class="back-button" title="返回仪表盘">
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
+          <div>
+            <h1 class="page-title">AI 调用日志</h1>
+            <p class="page-subtitle">查看和管理 AI 调用记录</p>
+          </div>
+        </div>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="handleRefresh">
@@ -198,8 +205,10 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
+  ArrowLeft,
   Refresh,
   Search,
   RefreshLeft,
@@ -207,6 +216,8 @@ import {
 } from '@element-plus/icons-vue'
 import { listAiLogs } from '@/api/ai-logs'
 import dayjs from 'dayjs'
+
+const router = useRouter()
 
 // 响应式数据
 const loading = ref(false)
@@ -281,6 +292,13 @@ const handleRefresh = () => {
 }
 
 /**
+ * 返回仪表盘
+ */
+const handleBackToDashboard = () => {
+  router.push('/dashboard')
+}
+
+/**
  * 处理分页大小变化
  */
 const handleSizeChange = (size) => {
@@ -333,6 +351,25 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 20px;
+}
+
+/* 标题和返回按钮组合 */
+.title-with-back {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.back-button {
+  margin-top: 4px;
+  padding: 8px;
+  font-size: 18px;
+  color: #606266;
+  transition: color 0.3s;
+}
+
+.back-button:hover {
+  color: #409eff;
 }
 
 .header-left {
