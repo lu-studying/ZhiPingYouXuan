@@ -116,6 +116,69 @@
       style="margin-bottom: 20px"
     />
 
+    <!-- AI 推荐区域 -->
+    <el-card v-if="searchForm.shopId" class="ai-recommend-card" shadow="never" style="margin-bottom: 20px">
+      <template #header>
+        <div class="card-header">
+          <div class="header-left-with-icon">
+            <el-icon class="ai-icon"><MagicStick /></el-icon>
+            <span>AI 推荐点评</span>
+          </div>
+          <el-button type="primary" text @click="loadAiRecommendations" :loading="aiRecommendLoading" size="small">
+            <el-icon><Refresh /></el-icon>
+            刷新推荐
+          </el-button>
+        </div>
+      </template>
+
+      <!-- 推荐列表 -->
+      <div v-loading="aiRecommendLoading" class="recommend-list">
+        <div v-if="aiRecommendList.length === 0 && !aiRecommendLoading" class="no-recommend">
+          <el-empty description="暂无推荐点评" :image-size="80" />
+        </div>
+        <div v-else class="recommend-items">
+          <div
+            v-for="(item, index) in aiRecommendList"
+            :key="item.review?.id || index"
+            class="recommend-item"
+            @click="handleViewRecommendDetail(item.review)"
+          >
+            <!-- 推荐理由 -->
+            <div class="recommend-reason">
+              <el-icon class="reason-icon"><InfoFilled /></el-icon>
+              <span class="reason-text">{{ item.reason || '推荐理由' }}</span>
+            </div>
+            <!-- 点评内容预览 -->
+            <div class="review-preview">
+              <div class="review-header">
+                <el-rate
+                  :model-value="item.review?.rating || 0"
+                  disabled
+                  :size="14"
+                  show-score
+                  text-color="#ff9900"
+                  :score-template="`${item.review?.rating || 0}`"
+                />
+                <span class="review-meta">
+                  <el-tag v-if="item.review?.isAiGenerated" type="success" size="small">AI生成</el-tag>
+                  <span class="like-count">❤️ {{ item.review?.likeCount || 0 }}</span>
+                </span>
+              </div>
+              <div class="review-content">
+                {{ item.review?.content || '-' }}
+              </div>
+              <div class="review-footer">
+                <span class="review-time">{{ formatDateTime(item.review?.createdAt) }}</span>
+                <el-button type="primary" text size="small" @click.stop="handleViewRecommendDetail(item.review)">
+                  查看详情
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 点评列表表格 -->
     <el-card class="table-card" shadow="never">
       <el-table
@@ -317,9 +380,11 @@ import {
   Search,
   RefreshLeft,
   View,
-  Shop
+  Shop,
+  MagicStick,
+  InfoFilled
 } from '@element-plus/icons-vue'
-import { listReviews } from '@/api/reviews'
+import { listReviews, recommendReviews } from '@/api/reviews'
 import { listShops } from '@/api/shops'
 import dayjs from 'dayjs'
 
@@ -332,6 +397,10 @@ const shopList = ref([])
 const detailDialogVisible = ref(false)
 const selectedReview = ref(null)
 const currentShopId = ref(null) // 记录当前加载的商家ID
+
+// AI 推荐相关数据
+const aiRecommendList = ref([])
+const aiRecommendLoading = ref(false)
 
 // 搜索表单
 const searchForm = reactive({
@@ -378,10 +447,12 @@ const handleShopChange = () => {
   pagination.page = 1
   if (searchForm.shopId) {
     loadReviews()
+    loadAiRecommendations() // 加载AI推荐
   } else {
     reviewList.value = []
     allReviewsData.value = []
     pagination.total = 0
+    aiRecommendList.value = [] // 清空推荐列表
   }
 }
 
@@ -526,6 +597,39 @@ const handlePageChange = (page) => {
 const handleViewDetail = (review) => {
   selectedReview.value = review
   detailDialogVisible.value = true
+}
+
+/**
+ * 加载AI推荐点评
+ */
+const loadAiRecommendations = async () => {
+  if (!searchForm.shopId) {
+    return
+  }
+
+  aiRecommendLoading.value = true
+  try {
+    const recommendations = await recommendReviews(searchForm.shopId, {
+      limit: 3 // 默认推荐3条
+    })
+    aiRecommendList.value = recommendations || []
+  } catch (error) {
+    console.error('加载AI推荐失败:', error)
+    ElMessage.error('加载AI推荐失败')
+    aiRecommendList.value = []
+  } finally {
+    aiRecommendLoading.value = false
+  }
+}
+
+/**
+ * 处理查看推荐点评详情
+ */
+const handleViewRecommendDetail = (review) => {
+  if (review) {
+    selectedReview.value = review
+    detailDialogVisible.value = true
+  }
 }
 
 /**
@@ -729,6 +833,135 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+/* AI 推荐卡片样式 */
+.ai-recommend-card {
+  border: 1px solid #e4e7ed;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.ai-icon {
+  color: #409eff;
+  font-size: 18px;
+}
+
+/* 推荐列表样式 */
+.recommend-list {
+  min-height: 100px;
+}
+
+.no-recommend {
+  padding: 20px 0;
+}
+
+.recommend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recommend-item {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.recommend-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 12px 0 rgba(64, 158, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 推荐理由样式 */
+.recommend-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
+  border-left: 3px solid #409eff;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.reason-icon {
+  color: #409eff;
+  font-size: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.reason-text {
+  color: #1d39c4;
+  font-size: 14px;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 点评预览样式 */
+.review-preview {
+  padding-left: 4px;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.like-count {
+  font-size: 13px;
+  color: #909399;
+}
+
+.review-content {
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.review-time {
+  font-size: 12px;
+  color: #909399;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .search-form {
@@ -739,6 +972,20 @@ onMounted(() => {
   .search-form .el-form-item {
     margin-right: 0;
     margin-bottom: 12px;
+  }
+
+  .recommend-item {
+    padding: 12px;
+  }
+
+  .recommend-reason {
+    padding: 10px;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

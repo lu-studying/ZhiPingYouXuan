@@ -82,7 +82,25 @@ export function generateAiDraft(shopId, data = {}) {
  * @param {Object} params - 查询参数
  * @param {string} params.preference - 偏好关键词（可选）
  * @param {number} params.limit - 数量（可选，默认3）
- * @returns {Promise<Array>} 推荐点评列表
+ * @returns {Promise<Array<{review: Object, reason: string}>>} 推荐点评列表
+ * 
+ * @example
+ * // 返回格式示例：
+ * [
+ *   {
+ *     review: {
+ *       id: 1,
+ *       shopId: 1,
+ *       userId: 1,
+ *       rating: 5,
+ *       content: "很好吃",
+ *       likeCount: 10,
+ *       isAiGenerated: false,
+ *       createdAt: "2025-12-15T10:00:00"
+ *     },
+ *     reason: "因为你是爱吃辣用户，这家店有"辣"标签，这条点评里提到了"辣"。"
+ *   }
+ * ]
  */
 export function recommendReviews(shopId, params = {}) {
   return request({
