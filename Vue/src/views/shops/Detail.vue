@@ -20,15 +20,32 @@
         <template #header>
           <div class="card-header">
             <span>基本信息</span>
-            <el-tag :type="shop.status === 1 ? 'success' : 'danger'" size="large">
-              {{ shop.status === 1 ? '正常' : '下线' }}
-            </el-tag>
+            <div class="card-header-right">
+              <span class="shop-id">商家ID：{{ shop.id }}</span>
+              <el-tag :type="shop.status === 1 ? 'success' : 'danger'" size="large">
+                {{ shop.status === 1 ? '正常' : '下线' }}
+              </el-tag>
+            </div>
           </div>
         </template>
 
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="商家ID">
-            {{ shop.id }}
+          <el-descriptions-item label="商家标签">
+            <div v-if="shopTagsLoading" class="tags-loading">
+              <el-icon class="is-loading"><Loading /></el-icon>
+            </div>
+            <div v-else-if="shopTags && shopTags.length > 0" class="tags-container">
+              <el-tag
+                v-for="tag in shopTags"
+                :key="tag.id"
+                type="info"
+                size="small"
+                style="margin-right: 8px; margin-bottom: 4px;"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </div>
+            <span v-else class="text-placeholder">暂无标签</span>
           </el-descriptions-item>
           <el-descriptions-item label="商家名称">
             <span class="shop-name">{{ shop.name }}</span>
@@ -88,7 +105,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import { getShop } from '@/api/shops'
+import { getShopTags } from '@/api/tags'
 
 // 使用 Vue Router
 const router = useRouter()
@@ -99,6 +118,10 @@ const loading = ref(false)
 
 // 商家详情数据
 const shop = ref(null)
+
+// 商家标签数据
+const shopTags = ref([])
+const shopTagsLoading = ref(false)
 
 /**
  * 加载商家详情
@@ -124,6 +147,8 @@ const loadShop = async () => {
     // 调用API获取商家详情
     const response = await getShop(shopId)
     shop.value = response
+    // 加载商家标签
+    loadShopTags(shopId)
   } catch (error) {
     console.error('加载商家详情失败:', error)
     // 如果商家不存在（404），显示错误提示
@@ -157,6 +182,24 @@ const handleEdit = () => {
  */
 const handleBack = () => {
   router.push('/shops')
+}
+
+/**
+ * 加载商家标签
+ * 
+ * @param {number} shopId - 商家ID
+ */
+const loadShopTags = async (shopId) => {
+  shopTagsLoading.value = true
+  try {
+    const tags = await getShopTags(shopId)
+    shopTags.value = tags || []
+  } catch (error) {
+    console.error('加载商家标签失败:', error)
+    shopTags.value = []
+  } finally {
+    shopTagsLoading.value = false
+  }
 }
 
 /**
@@ -245,6 +288,17 @@ onMounted(() => {
   align-items: center;
 }
 
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shop-id {
+  font-size: 13px;
+  color: #606266;
+}
+
 .shop-name {
   font-size: 16px;
   font-weight: 500;
@@ -254,6 +308,18 @@ onMounted(() => {
 /* 占位文本样式 */
 .text-placeholder {
   color: #c0c4cc;
+}
+
+/* 标签容器样式 */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tags-loading {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* 响应式调整 */

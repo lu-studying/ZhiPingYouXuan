@@ -1,8 +1,10 @@
 package com.demo.dp.controller;
 
 import com.demo.dp.domain.entity.Review;
+import com.demo.dp.domain.entity.Tag;
 import com.demo.dp.domain.entity.User;
 import com.demo.dp.service.ReviewService;
+import com.demo.dp.service.TagService;
 import com.demo.dp.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,16 +46,19 @@ public class UserController {
 
     private final UserService userService;
     private final ReviewService reviewService;
+    private final TagService tagService;
 
     /**
-     * 构造函数：注入用户服务和点评服务。
+     * 构造函数：注入用户服务、点评服务和标签服务。
      *
      * @param userService 用户业务服务
      * @param reviewService 点评业务服务（用于查询用户点评列表）
+     * @param tagService 标签业务服务（用于查询用户标签）
      */
-    public UserController(UserService userService, ReviewService reviewService) {
+    public UserController(UserService userService, ReviewService reviewService, TagService tagService) {
         this.userService = userService;
         this.reviewService = reviewService;
+        this.tagService = tagService;
     }
 
     /**
@@ -225,6 +230,46 @@ public class UserController {
         result.put("size", size);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 查询指定用户的标签列表。
+     * 
+     * <p>路径：GET /api/users/{id}/tags
+     * <p>认证：需要用户登录（JWT）。
+     * <p>功能：查询指定用户已绑定的标签列表。
+     * 
+     * <p>路径参数：
+     * <ul>
+     *   <li>id：用户ID</li>
+     * </ul>
+     * 
+     * <p>响应示例：
+     * <pre>
+     * [
+     *   {
+     *     "id": 1,
+     *     "name": "爱吃辣",
+     *     "type": "user",
+     *     "createdAt": "2025-12-15T10:00:00"
+     *   },
+     *   {
+     *     "id": 2,
+     *     "name": "环境控",
+     *     "type": "user",
+     *     "createdAt": "2025-12-15T10:00:00"
+     *   }
+     * ]
+     * </pre>
+     * 
+     * @param id 用户ID
+     * @return 标签列表，HTTP 200 状态码
+     */
+    @GetMapping("/{id}/tags")
+    public ResponseEntity<List<Tag>> getUserTags(@PathVariable Long id) {
+        log.info("查询用户标签列表: userId={}", id);
+        List<Tag> tags = tagService.listTagsOfUser(id);
+        return ResponseEntity.ok(tags);
     }
 }
 

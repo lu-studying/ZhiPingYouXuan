@@ -32,14 +32,31 @@
       <template #header>
         <div class="card-header">
           <span>基本信息</span>
+          <div class="card-header-right">
+            <el-tag :type="user.status === 1 ? 'success' : 'danger'" size="large">
+              {{ user.status === 1 ? '正常' : '禁用' }}
+            </el-tag>
+          </div>
         </div>
       </template>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="用户ID">{{ user.id }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="user.status === 1 ? 'success' : 'danger'" size="small">
-            {{ user.status === 1 ? '正常' : '禁用' }}
-          </el-tag>
+        <el-descriptions-item label="用户标签">
+          <div v-if="userTagsLoading" class="tags-loading">
+            <el-icon class="is-loading"><Loading /></el-icon>
+          </div>
+          <div v-else-if="userTags && userTags.length > 0" class="tags-container">
+            <el-tag
+              v-for="tag in userTags"
+              :key="tag.id"
+              type="info"
+              size="small"
+              style="margin-right: 8px; margin-bottom: 4px;"
+            >
+              {{ tag.name }}
+            </el-tag>
+          </div>
+          <span v-else class="text-placeholder">暂无标签</span>
         </el-descriptions-item>
         <el-descriptions-item label="手机号">
           {{ user.mobile || '-' }}
@@ -169,9 +186,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   ArrowLeft,
-  Refresh
+  Refresh,
+  Loading
 } from '@element-plus/icons-vue'
 import { getUser, getUserReviews } from '@/api/users'
+import { getUserTags } from '@/api/tags'
 import dayjs from 'dayjs'
 
 const route = useRoute()
@@ -182,6 +201,10 @@ const loading = ref(false)
 const user = ref(null)
 const reviewList = ref([])
 const reviewsLoading = ref(false)
+
+// 用户标签数据
+const userTags = ref([])
+const userTagsLoading = ref(false)
 
 // 点评分页信息
 const reviewPagination = reactive({
@@ -205,8 +228,9 @@ const loadUserDetail = async () => {
   try {
     const userDetail = await getUser(userId)
     user.value = userDetail
-    // 加载用户详情后，自动加载第一页点评
+    // 加载用户详情后，自动加载第一页点评和标签
     loadUserReviews()
+    loadUserTags(userId)
   } catch (error) {
     console.error('加载用户详情失败:', error)
     ElMessage.error('加载用户详情失败')
@@ -248,6 +272,24 @@ const loadUserReviews = async () => {
  */
 const handleBack = () => {
   router.push('/users')
+}
+
+/**
+ * 加载用户标签
+ * 
+ * @param {number} userId - 用户ID
+ */
+const loadUserTags = async (userId) => {
+  userTagsLoading.value = true
+  try {
+    const tags = await getUserTags(userId)
+    userTags.value = tags || []
+  } catch (error) {
+    console.error('加载用户标签失败:', error)
+    userTags.value = []
+  } finally {
+    userTagsLoading.value = false
+  }
 }
 
 /**
@@ -357,10 +399,33 @@ onMounted(() => {
   align-items: center;
 }
 
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* 无头像样式 */
 .no-avatar {
   color: #909399;
   font-size: 14px;
+}
+
+/* 占位文本样式 */
+.text-placeholder {
+  color: #c0c4cc;
+}
+
+/* 标签容器样式 */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tags-loading {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* 评分单元格 */
