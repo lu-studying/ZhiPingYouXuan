@@ -161,11 +161,19 @@ public class SecurityConfig {
         // 允许的源（前端地址）
         // - Vite 直连：localhost:3000 / 127.0.0.1:3000
         // - Nginx 统一入口：localhost / 127.0.0.1
+        // - UniApp H5 开发服务器：localhost:5173, localhost:8080 等
+        // - 其他可能的开发端口
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "http://localhost",
-            "http://127.0.0.1"
+            "http://127.0.0.1",
+            "http://localhost:5173",      // UniApp H5 开发服务器（Vite 默认端口）
+            "http://127.0.0.1:5173",
+            "http://localhost:8080",      // UniApp H5 开发服务器（如果配置为此端口）
+            "http://127.0.0.1:8080",
+            "http://localhost:5174",      // 备用端口
+            "http://127.0.0.1:5174"
         ));
         
         // 允许的HTTP方法
