@@ -1,22 +1,26 @@
 <template>
   <view class="orders-container">
-    <view v-if="loading" class="loading">
-      <text>加载中...</text>
-    </view>
+    <!-- 加载状态 -->
+    <Loading v-if="loading" text="加载中..." />
+    
+    <!-- 订单列表 -->
     <view v-else-if="orders.length > 0" class="orders-list">
-      <view 
-        v-for="order in orders" 
+      <order-card
+        v-for="order in orders"
         :key="order.id"
-        class="order-item"
-      >
-        <text class="shop-name">{{ order.shopName || '商家' }}</text>
-        <text class="amount">消费金额：¥{{ order.amount }}</text>
-        <text class="time">{{ formatDate(order.visitTime) }}</text>
-      </view>
+        :order="order"
+        @click="handleOrderClick"
+      />
     </view>
-    <view v-else class="empty">
-      <text>暂无订单</text>
-    </view>
+    
+    <!-- 空状态 -->
+    <EmptyState
+      v-else
+      icon="🛒"
+      text="暂无订单"
+      button-text="去逛逛"
+      @button-click="goToHome"
+    />
   </view>
 </template>
 
@@ -24,7 +28,9 @@
 import { ref, onMounted } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import { listMyOrders } from '@/api/orders'
-import { formatDate } from '@/utils/format'
+import OrderCard from '@/components/order-card.vue'
+import Loading from '@/components/loading.vue'
+import EmptyState from '@/components/empty-state.vue'
 
 const orders = ref([])
 const loading = ref(true)
@@ -33,16 +39,36 @@ onMounted(() => {
   loadOrders()
 })
 
+/**
+ * 加载订单列表
+ */
 const loadOrders = async () => {
   try {
     loading.value = true
     const data = await listMyOrders()
-    orders.value = data || []
+    orders.value = Array.isArray(data) ? data : []
   } catch (error) {
     console.error('加载订单列表失败:', error)
+    orders.value = []
+    uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * 处理订单点击
+ */
+const handleOrderClick = (order) => {
+  // order-card 组件内部已处理跳转，这里可以添加其他逻辑
+  console.log('点击订单:', order)
+}
+
+/**
+ * 跳转到首页
+ */
+const goToHome = () => {
+  uni.switchTab({ url: '/pages/home/index' })
 }
 
 // 下拉刷新
@@ -60,42 +86,9 @@ onPullDownRefresh(() => {
   padding: 20rpx;
 }
 
-.loading, .empty {
-  text-align: center;
-  padding: 100rpx 0;
-  color: #999;
-}
-
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-}
-
-.order-item {
-  background-color: #fff;
-  padding: 30rpx;
-  border-radius: 10rpx;
-}
-
-.shop-name {
-  display: block;
-  font-size: 32rpx;
-  font-weight: bold;
-  margin-bottom: 10rpx;
-}
-
-.amount {
-  display: block;
-  font-size: 28rpx;
-  color: #ff6600;
-  margin-bottom: 10rpx;
-}
-
-.time {
-  display: block;
-  font-size: 24rpx;
-  color: #999;
 }
 </style>
 

@@ -123,6 +123,44 @@ public class UserController {
     }
 
     /**
+     * 查询当前登录用户的信息。
+     * 
+     * <p>路径：GET /api/users/me
+     * <p>认证：需要用户登录（JWT）。
+     * <p>功能：查询当前登录用户的详细信息。
+     * 
+     * <p>响应示例：
+     * <pre>
+     * {
+     *   "id": 1,
+     *   "mobile": "13800138000",
+     *   "email": null,
+     *   "nickname": "用户1",
+     *   "avatar": null,
+     *   "status": 1,
+     *   "createdAt": "2025-12-15T10:00:00",
+     *   "updatedAt": "2025-12-15T10:00:00"
+     * }
+     * </pre>
+     * 
+     * @param authentication 认证信息，用于获取当前用户ID
+     * @return 用户对象，HTTP 200 状态码；如果用户不存在，返回 HTTP 404
+     */
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUser(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        log.info("查询当前用户信息: userId={}", userId);
+
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            log.warn("用户不存在: userId={}", userId);
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(userOpt.get());
+    }
+
+    /**
      * 根据用户ID查询用户详情。
      * 
      * <p>路径：GET /api/users/{id}
@@ -162,6 +200,70 @@ public class UserController {
         }
 
         return ResponseEntity.ok(userOpt.get());
+    }
+
+    /**
+     * 查询当前登录用户的点评列表。
+     * 
+     * <p>路径：GET /api/users/me/reviews
+     * <p>认证：需要用户登录（JWT）。
+     * <p>功能：查询当前登录用户的所有点评列表（分页）。
+     * 
+     * <p>查询参数：
+     * <ul>
+     *   <li>page（可选，默认0）：页码，从0开始</li>
+     *   <li>size（可选，默认10）：每页大小</li>
+     *   </ul>
+     * 
+     * <p>响应示例：
+     * <pre>
+     * {
+     *   "content": [
+     *     {
+     *       "id": 10,
+     *       "shopId": 1,
+     *       "userId": 1,
+     *       "rating": 5,
+     *       "content": "很好吃",
+     *       "images": "[]",
+     *       "isAiGenerated": false,
+     *       "likeCount": 10,
+     *       "status": 1,
+     *       "createdAt": "2025-12-15T10:00:00"
+     *     }
+     *   ],
+     *   "total": 50,
+     *   "page": 0,
+     *   "size": 10
+     * }
+     * </pre>
+     * 
+     * @param authentication 认证信息，用于获取当前用户ID
+     * @param page 页码（从0开始），可选，默认0
+     * @param size 每页大小，可选，默认10
+     * @return 点评列表（分页结果），HTTP 200 状态码
+     */
+    @GetMapping("/me/reviews")
+    public ResponseEntity<Map<String, Object>> getMyReviews(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Long userId = Long.parseLong(authentication.getName());
+        log.info("查询当前用户点评列表: userId={}, page={}, size={}", userId, page, size);
+
+        // 调用服务层查询用户点评列表
+        List<Review> reviews = reviewService.listByUser(userId, page, size);
+        long total = reviewService.countByUserId(userId);
+
+        // 构建响应结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", reviews);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+
+        return ResponseEntity.ok(result);
     }
 
     /**

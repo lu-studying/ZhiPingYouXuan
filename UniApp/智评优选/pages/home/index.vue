@@ -5,6 +5,7 @@
         class="search-input" 
         placeholder="搜索商家、地址..." 
         v-model="searchKeyword"
+        @input="handleSearchInput"
         @confirm="handleSearch"
       />
     </view>
@@ -28,18 +29,16 @@
         :shop="shop"
       />
       
-      <view v-if="shops && shops.length === 0 && !loading" class="empty-state">
-        <text>暂无商家数据</text>
-      </view>
+      <empty-state 
+        v-if="shops && shops.length === 0 && !loading" 
+        text="暂无商家数据"
+        icon="🏪"
+      />
     </view>
     
-    <view v-if="loading" class="loading">
-      <text>加载中...</text>
-    </view>
+    <loading v-if="loading" text="加载中..." />
     
-    <view v-if="loadingMore" class="loading-more">
-      <text>加载更多...</text>
-    </view>
+    <loading v-if="loadingMore" text="加载更多..." size="small" />
     
     <view v-if="!hasMore && shops.length > 0" class="no-more">
       <text>没有更多了</text>
@@ -52,6 +51,9 @@ import { ref, onMounted } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { listShops } from '@/api/shops'
 import ShopCard from '@/components/shop-card.vue'
+import Loading from '@/components/loading.vue'
+import EmptyState from '@/components/empty-state.vue'
+import { debounce } from '@/utils/debounce'
 
 const searchKeyword = ref('')
 const selectedCategory = ref('全部')
@@ -112,7 +114,14 @@ const loadShops = async (isLoadMore = false) => {
 }
 
 /**
- * 处理搜索
+ * 处理搜索输入（带防抖）
+ */
+const handleSearchInput = debounce(() => {
+  loadShops(false)
+}, 500)
+
+/**
+ * 处理搜索确认
  */
 const handleSearch = () => {
   loadShops(false)

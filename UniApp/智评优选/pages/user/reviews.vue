@@ -1,55 +1,143 @@
 <template>
   <view class="reviews-container">
-    <view v-if="loading" class="loading">
-      <text>加载中...</text>
-    </view>
+    <!-- 加载状态 -->
+    <Loading v-if="loading" text="加载中..." />
+    
+    <!-- 点评列表 -->
     <view v-else-if="reviews.length > 0" class="reviews-list">
-      <view 
-        v-for="review in reviews" 
+      <review-card
+        v-for="review in reviews"
         :key="review.id"
-        class="review-item"
-      >
-        <text class="rating">评分：{{ review.rating }}星</text>
-        <text class="content">{{ review.content }}</text>
-        <text class="time">{{ formatDate(review.createdAt) }}</text>
+        :review="review"
+        :shop-id="review.shopId"
+      />
+      
+      <!-- 加载更多 -->
+      <view v-if="loadingMore" class="loading-more">
+        <Loading text="加载更多..." size="small" />
+      </view>
+      
+      <!-- 没有更多 -->
+      <view v-if="!hasMore && reviews.length > 0" class="no-more">
+        <text>没有更多了</text>
       </view>
     </view>
-    <view v-else class="empty">
-      <text>暂无点评</text>
-    </view>
+    
+    <!-- 空状态 -->
+    <EmptyState
+      v-else
+      icon="📝"
+      text="暂无点评"
+      button-text="去写点评"
+      @button-click="goToHome"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { onPullDownRefresh } from '@dcloudio/uni-app'
+import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { getMyReviews } from '@/api/users'
-import { formatDate } from '@/utils/format'
+import ReviewCard from '@/components/review-card.vue'
+import Loading from '@/components/loading.vue'
+import EmptyState from '@/components/empty-state.vue'
 
 const reviews = ref([])
-const loading = ref(true)
+const loading = ref(false) // 改为 false，避免阻止首次加载
+const loadingMore = ref(false)
+const page = ref(0)
+const hasMore = ref(true)
+const pageSize = 10
 
 onMounted(() => {
-  loadReviews()
+  console.log('onMounted: 开始加载点评列表')
+  loadReviews(false)
 })
 
-const loadReviews = async () => {
-  try {
+/**
+ * 加载点评列表
+ */
+const loadReviews = async (isLoadMore = false) => {
+  // 防止重复请求：如果是加载更多，检查是否正在加载
+  if (isLoadMore && (loading.value || loadingMore.value)) {
+    console.log('loadReviews: 正在加载中，跳过重复请求')
+    return
+  }
+  
+  // 如果是首次加载，检查是否正在加载
+  if (!isLoadMore && loading.value) {
+    console.log('loadReviews: 首次加载中，跳过重复请求')
+    return
+  }
+  
+  if (!isLoadMore) {
+    page.value = 0
+    hasMore.value = true
     loading.value = true
-    const res = await getMyReviews({ page: 0, size: 10 })
-    reviews.value = res.content || []
+    console.log('loadReviews: 开始首次加载')
+  } else {
+    if (!hasMore.value) {
+      console.log('loadReviews: 没有更多数据')
+      return
+    }
+    loadingMore.value = true
+    console.log('loadReviews: 开始加载更多')
+  }
+  
+  try {
+    console.log('loadReviews: 调用 getMyReviews API, page=', page.value, 'size=', pageSize)
+    const res = await getMyReviews({ 
+      page: page.value, 
+      size: pageSize 
+    })
+    
+    console.log('loadReviews: API 返回结果:', res)
+    
+    const newReviews = res.content || []
+    const total = res.total || 0
+    
+    if (isLoadMore) {
+      reviews.value = [...reviews.value, ...newReviews]
+    } else {
+      reviews.value = newReviews
+    }
+    
+    // 判断是否还有更多
+    hasMore.value = reviews.value.length < total
+    page.value++
+    console.log('loadReviews: 加载完成，共', reviews.value.length, '条，总计', total)
   } catch (error) {
-    console.error('加载点评列表失败:', error)
+    console.error('loadReviews: 加载点评列表失败:', error)
+    if (!isLoadMore) {
+      reviews.value = []
+    }
+    uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
+    loadingMore.value = false
+    console.log('loadReviews: 清理加载状态')
   }
+}
+
+/**
+ * 跳转到首页
+ */
+const goToHome = () => {
+  uni.switchTab({ url: '/pages/home/index' })
 }
 
 // 下拉刷新
 onPullDownRefresh(() => {
-  loadReviews().finally(() => {
+  loadReviews(false).finally(() => {
     uni.stopPullDownRefresh()
   })
+})
+
+// 上拉加载更多
+onReachBottom(() => {
+  if (hasMore.value && !loadingMore.value) {
+    loadReviews(true)
+  }
 })
 </script>
 
@@ -60,43 +148,20 @@ onPullDownRefresh(() => {
   padding: 20rpx;
 }
 
-.loading, .empty {
-  text-align: center;
-  padding: 100rpx 0;
-  color: #999;
-}
-
 .reviews-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
 }
 
-.review-item {
-  background-color: #fff;
-  padding: 30rpx;
-  border-radius: 10rpx;
+.loading-more {
+  padding: 40rpx 0;
 }
 
-.rating {
-  display: block;
-  font-size: 28rpx;
-  color: #ff6600;
-  margin-bottom: 10rpx;
-}
-
-.content {
-  display: block;
-  font-size: 28rpx;
-  color: #333;
-  margin-bottom: 10rpx;
-  line-height: 1.6;
-}
-
-.time {
-  display: block;
+.no-more {
+  text-align: center;
+  padding: 30rpx 0;
+  color: #ccc;
   font-size: 24rpx;
-  color: #999;
 }
 </style>
 

@@ -1,14 +1,25 @@
 <template>
   <view class="shop-detail-container">
-    <view v-if="loading" class="loading">
-      <text>加载中...</text>
-    </view>
+    <loading v-if="loading" text="加载中..." />
     <view v-else-if="shop" class="content">
       <!-- 商家信息 -->
       <view class="shop-info-section">
         <text class="shop-name">{{ shop.name }}</text>
         <text class="shop-category">{{ shop.category }}</text>
         <text class="shop-address">{{ shop.address || '地址未知' }}</text>
+        <!-- 商家标签 -->
+        <view 
+          v-if="Array.isArray(shop.tags) && shop.tags.length > 0" 
+          class="shop-tags"
+        >
+          <view 
+            v-for="(tag, index) in shop.tags" 
+            :key="index"
+            class="tag-item"
+          >
+            <text class="tag-text">{{ typeof tag === 'string' ? tag : (tag.name || '') }}</text>
+          </view>
+        </view>
         <view class="rating-section">
           <rating-stars :rating="shop.avgScore || 0" :show-score="true" />
         </view>
@@ -57,12 +68,16 @@
             />
           </view>
         </view>
-        <view v-else-if="!reviewsLoading" class="empty-state">
-          <text>暂无点评</text>
-        </view>
-        <view v-if="reviewsLoading" class="loading-more">
-          <text>加载中...</text>
-        </view>
+        <empty-state 
+          v-else-if="!reviewsLoading" 
+          text="暂无点评"
+          icon="📝"
+        />
+        <loading 
+          v-if="reviewsLoading" 
+          text="加载中..."
+          size="small"
+        />
       </view>
     </view>
     <view v-else class="error">
@@ -84,6 +99,8 @@ import { recommendReviews, listReviews } from '@/api/reviews'
 import { formatAvgPrice } from '@/utils/format'
 import RatingStars from '@/components/rating-stars.vue'
 import ReviewCard from '@/components/review-card.vue'
+import Loading from '@/components/loading.vue'
+import EmptyState from '@/components/empty-state.vue'
 import { useAuthStore } from '@/store/auth'
 
 const shop = ref(null)
@@ -288,6 +305,26 @@ onReachBottom(() => {
   color: #666;
   margin-bottom: 20rpx;
   line-height: 1.5;
+}
+
+.shop-tags {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-bottom: 16rpx;
+  margin-top: 8rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.tag-item {
+  padding: 6rpx 14rpx;
+  border-radius: 20rpx;
+  background-color: #f0f4ff;
+}
+
+.tag-text {
+  font-size: 22rpx;
+  color: #556cd6;
 }
 
 .rating-section {
