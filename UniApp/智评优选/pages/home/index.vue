@@ -22,16 +22,11 @@
     </view>
     
     <view class="shop-list">
-      <view 
+      <shop-card 
         v-for="shop in shops" 
         :key="shop.id"
-        class="shop-item"
-        @click="goToShopDetail(shop.id)"
-      >
-        <text class="shop-name">{{ shop.name }}</text>
-        <text class="shop-category">{{ shop.category }}</text>
-        <text class="shop-address">{{ shop.address }}</text>
-      </view>
+        :shop="shop"
+      />
       
       <view v-if="shops && shops.length === 0 && !loading" class="empty-state">
         <text>暂无商家数据</text>
@@ -41,6 +36,14 @@
     <view v-if="loading" class="loading">
       <text>加载中...</text>
     </view>
+    
+    <view v-if="loadingMore" class="loading-more">
+      <text>加载更多...</text>
+    </view>
+    
+    <view v-if="!hasMore && shops.length > 0" class="no-more">
+      <text>没有更多了</text>
+    </view>
   </view>
 </template>
 
@@ -48,45 +51,82 @@
 import { ref, onMounted } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { listShops } from '@/api/shops'
+import ShopCard from '@/components/shop-card.vue'
 
 const searchKeyword = ref('')
 const selectedCategory = ref('全部')
 const shops = ref([])
 const loading = ref(false)
+const page = ref(0)
+const hasMore = ref(true)
+const loadingMore = ref(false)
 
 const categories = ['全部', '火锅', '川菜', '日料', '西餐', '咖啡', '其他']
 
-const loadShops = async () => {
-  loading.value = true
+/**
+ * 加载商家列表
+ */
+const loadShops = async (isLoadMore = false) => {
+  if (loading.value || loadingMore.value) return
+  
+  if (!isLoadMore) {
+    page.value = 0
+    hasMore.value = true
+    loading.value = true
+  } else {
+    if (!hasMore.value) return
+    loadingMore.value = true
+  }
+  
   try {
     const params = {
-      page: 0,
+      page: page.value,
       size: 10,
       keyword: searchKeyword.value || undefined,
       category: selectedCategory.value === '全部' ? undefined : selectedCategory.value
     }
     const res = await listShops(params)
-    console.log('API 响应数据:', res)
-    // 确保 shops.value 始终是数组
-    shops.value = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : [])
-    console.log('商家列表数据:', shops.value)
+    
+    const newShops = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : [])
+    const total = res?.total || 0
+    
+    if (isLoadMore) {
+      shops.value = [...shops.value, ...newShops]
+    } else {
+      shops.value = newShops
+    }
+    
+    // 判断是否还有更多
+    hasMore.value = shops.value.length < total
+    page.value++
   } catch (error) {
     console.error('加载商家列表失败:', error)
-    shops.value = [] // 确保是数组
+    if (!isLoadMore) {
+      shops.value = []
+    }
+    uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
 }
 
+/**
+ * 处理搜索
+ */
 const handleSearch = () => {
-  loadShops()
+  loadShops(false)
 }
 
+/**
+ * 选择分类
+ */
 const selectCategory = (category) => {
   selectedCategory.value = category
-  loadShops()
+  loadShops(false)
 }
 
+// 商家卡片组件已内置跳转功能，此函数可保留用于其他场景
 const goToShopDetail = (shopId) => {
   uni.navigateTo({
     url: `/pages/shop/detail?shopId=${shopId}`
@@ -99,14 +139,16 @@ onMounted(() => {
 
 // 下拉刷新
 onPullDownRefresh(() => {
-  loadShops().finally(() => {
+  loadShops(false).finally(() => {
     uni.stopPullDownRefresh()
   })
 })
 
 // 上拉加载更多
 onReachBottom(() => {
-  // TODO: 实现分页加载
+  if (hasMore.value && !loadingMore.value) {
+    loadShops(true)
+  }
 })
 </script>
 
@@ -153,33 +195,6 @@ onReachBottom(() => {
   padding: 20rpx;
 }
 
-.shop-item {
-  background-color: #fff;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  border-radius: 10rpx;
-}
-
-.shop-name {
-  display: block;
-  font-size: 32rpx;
-  font-weight: bold;
-  margin-bottom: 10rpx;
-}
-
-.shop-category {
-  display: block;
-  font-size: 24rpx;
-  color: #999;
-  margin-bottom: 10rpx;
-}
-
-.shop-address {
-  display: block;
-  font-size: 24rpx;
-  color: #666;
-}
-
 .empty-state {
   text-align: center;
   padding: 100rpx 0;
@@ -190,6 +205,20 @@ onReachBottom(() => {
   text-align: center;
   padding: 40rpx 0;
   color: #999;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 30rpx 0;
+  color: #999;
+  font-size: 26rpx;
+}
+
+.no-more {
+  text-align: center;
+  padding: 30rpx 0;
+  color: #ccc;
+  font-size: 24rpx;
 }
 </style>
 
