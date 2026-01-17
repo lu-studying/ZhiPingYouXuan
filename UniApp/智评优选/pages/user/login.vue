@@ -75,7 +75,7 @@ const validateAccount = () => {
   }
   
   // 手机号正则：11位数字
-  const phoneRegex = /^1[3-9]\d{9}$/
+  const phoneRegex = /^1[1-9]\d{9}$/
   // 邮箱正则
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   
@@ -142,7 +142,19 @@ const handleLogin = async () => {
     
     if (res.token) {
       authStore.setToken(res.token)
-      authStore.setUserInfo(res.userInfo || {})
+      // 保存用户信息，如果没有返回 userInfo，则保存登录账号
+      const userInfo = res.userInfo || {}
+      // 如果 userInfo 中没有 mobile 和 email，且登录账号是手机号或邮箱，则保存
+      if (!userInfo.mobile && !userInfo.email) {
+        const accountValue = account.value.trim()
+        // 判断是手机号还是邮箱
+        if (/^1[1-9]\d{9}$/.test(accountValue)) {
+          userInfo.mobile = accountValue
+        } else if (accountValue.includes('@')) {
+          userInfo.email = accountValue
+        }
+      }
+      authStore.setUserInfo(userInfo)
       
       uni.showToast({ title: '登录成功', icon: 'success' })
       

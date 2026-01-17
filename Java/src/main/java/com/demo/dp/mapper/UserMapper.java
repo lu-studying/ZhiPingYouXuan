@@ -44,10 +44,27 @@ public interface UserMapper {
 
     /**
      * 统计符合条件的用户总数（用于分页计算）。
-     *
+     * 
      * @param keyword 搜索关键词（在手机号和邮箱中搜索），可选
      * @return 用户总数
      */
     long countByConditions(@Param("keyword") String keyword);
+
+    /**
+     * 更新用户信息
+     * 
+     * @param user 用户对象（包含需要更新的字段）
+     * @return 更新的行数
+     */
+    int update(User user);
+
+    /**
+     * 根据昵称查询用户（用于查重，排除指定用户ID）
+     * 
+     * @param nickname 昵称
+     * @param excludeUserId 排除的用户ID（用于更新时排除自己）
+     * @return 用户对象，如果不存在则返回 null
+     */
+    User findByNickname(@Param("nickname") String nickname, @Param("excludeUserId") Long excludeUserId);
 }
 

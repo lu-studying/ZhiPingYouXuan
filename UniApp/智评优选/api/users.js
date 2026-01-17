@@ -53,3 +53,19 @@ export function getMyReviews(params = {}) {
   })
 }
 
+/**
+ * 更新当前用户信息
+ * 
+ * @param {Object} userInfo - 用户信息对象
+ * @param {string} userInfo.nickname - 昵称（可选）
+ * @param {string} userInfo.avatar - 头像URL（可选）
+ * @returns {Promise<Object>} 更新后的用户信息对象
+ */
+export function updateMyInfo(userInfo) {
+  return request({
+    url: '/users/me',
+    method: 'put',
+    data: userInfo
+  })
+}
+

@@ -33,7 +33,22 @@
         <text class="reason-icon">💡</text>
         <text class="reason-title">推荐理由</text>
       </view>
-      <text class="reason-text">{{ recommendReason }}</text>
+      <view class="reason-content">
+        <text 
+          class="reason-text" 
+          :class="{ 'reason-text-collapsed': !isExpanded && shouldShowExpand }"
+        >
+          {{ recommendReason }}
+        </text>
+        <view 
+          v-if="shouldShowExpand" 
+          class="expand-toggle"
+          @click="toggleExpand"
+        >
+          <text class="expand-text">{{ isExpanded ? '收起' : '展开' }}</text>
+          <text class="expand-icon" :class="{ 'expanded': isExpanded }">▼</text>
+        </view>
+      </view>
     </view>
     
     <!-- 图片展示 -->
@@ -106,6 +121,7 @@ const props = defineProps({
 const emit = defineEmits(['like'])
 
 const isLiked = ref(false)
+const isExpanded = ref(false) // 推荐理由是否展开
 
 /**
  * 解析图片列表
@@ -145,14 +161,21 @@ const formatTime = (date) => {
 
 /**
  * 获取显示名称
+ * 优先级：userNickname > user.nickname > user.username > userId > '匿名用户'
  */
 const getDisplayName = () => {
+  // 优先使用后端返回的 userNickname（从 JOIN 查询获取）
+  if (props.review.userNickname) {
+    return props.review.userNickname
+  }
+  // 兼容旧数据格式（如果有嵌套的 user 对象）
   if (props.review.user?.nickname) {
     return props.review.user.nickname
   }
   if (props.review.user?.username) {
     return props.review.user.username
   }
+  // 如果都没有，显示用户ID
   if (props.review.userId) {
     return `用户${props.review.userId}`
   }
@@ -182,6 +205,26 @@ const previewImage = (current, index) => {
     urls: reviewImages.value,
     current: current
   })
+}
+
+/**
+ * 判断是否需要显示展开/收起功能
+ * 当推荐理由文本超过约3行（约90个字符）时显示
+ */
+const shouldShowExpand = computed(() => {
+  if (!props.recommendReason) {
+    return false
+  }
+  // 简单判断：如果文本长度超过90个字符，认为需要展开/收起
+  // 实际可以根据实际显示效果调整
+  return props.recommendReason.length > 90
+})
+
+/**
+ * 切换展开/收起状态
+ */
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value
 }
 
 /**
@@ -336,10 +379,59 @@ const handleLike = async () => {
   font-weight: 500;
 }
 
+.reason-content {
+  position: relative;
+}
+
 .reason-text {
   font-size: 26rpx;
   color: #666;
   line-height: 1.6;
+  word-break: break-word;
+  transition: max-height 0.3s ease;
+}
+
+/* 收起状态：限制显示3行 */
+.reason-text-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 展开/收起按钮 */
+.expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  margin-top: 12rpx;
+  padding: 8rpx 0;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.expand-toggle:active {
+  opacity: 0.7;
+}
+
+.expand-text {
+  font-size: 24rpx;
+  color: #3c9cff;
+  font-weight: 500;
+}
+
+.expand-icon {
+  font-size: 20rpx;
+  color: #3c9cff;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
 }
 
 /* 图片展示 */

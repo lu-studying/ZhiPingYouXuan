@@ -67,5 +67,28 @@
         </where>
     </select>
 
+    <!-- 更新用户信息 -->
+    <update id="update" parameterType="com.demo.dp.domain.entity.User">
+        UPDATE user
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="status != null">status = #{status},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据昵称查询用户（用于查重，排除指定用户ID） -->
+    <select id="findByNickname" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        FROM user
+        WHERE nickname = #{nickname}
+        <if test="excludeUserId != null">
+            AND id != #{excludeUserId}
+        </if>
+        LIMIT 1
+    </select>
+
 </mapper>
 

@@ -28,6 +28,9 @@ public class Review {
 
     private LocalDateTime createdAt; // 创建时间
 
+    // 用户昵称（用于查询结果映射，不持久化到数据库）
+    private String userNickname; // 用户昵称
+
     // region getters/setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -49,6 +52,8 @@ public class Review {
     public void setStatus(Integer status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getUserNickname() { return userNickname; }
+    public void setUserNickname(String userNickname) { this.userNickname = userNickname; }
     // endregion
 }
 

@@ -373,5 +373,67 @@ public class UserController {
         List<Tag> tags = tagService.listTagsOfUser(id);
         return ResponseEntity.ok(tags);
     }
+
+    /**
+     * 更新当前登录用户的信息。
+     * 
+     * <p>路径：PUT /api/users/me
+     * <p>认证：需要用户登录（JWT）。
+     * <p>功能：更新当前登录用户的昵称、头像等信息。
+     * 
+     * <p>请求体示例：
+     * <pre>
+     * {
+     *   "nickname": "新昵称",
+     *   "avatar": "https://example.com/avatar.jpg"
+     * }
+     * </pre>
+     * 
+     * <p>响应示例：
+     * <pre>
+     * {
+     *   "id": 1,
+     *   "mobile": "13800138000",
+     *   "email": null,
+     *   "nickname": "新昵称",
+     *   "avatar": "https://example.com/avatar.jpg",
+     *   "status": 1,
+     *   "createdAt": "2025-12-15T10:00:00",
+     *   "updatedAt": "2025-12-15T11:00:00"
+     * }
+     * </pre>
+     * 
+     * @param authentication 认证信息，用于获取当前用户ID
+     * @param user 用户对象（包含需要更新的字段）
+     * @return 更新后的用户对象，HTTP 200 状态码；如果用户不存在，返回 HTTP 404
+     */
+    @PutMapping("/me")
+    public ResponseEntity<?> updateCurrentUser(
+            Authentication authentication,
+            @RequestBody User user) {
+        Long userId = Long.parseLong(authentication.getName());
+        log.info("更新当前用户信息: userId={}, nickname={}", userId, user.getNickname());
+
+        // 设置用户ID，确保只能更新自己的信息
+        user.setId(userId);
+
+        try {
+            User updated = userService.updateUser(user);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.warn("更新用户信息失败: {}", e.getMessage());
+            // 返回错误信息，前端可以显示给用户
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            // 根据错误类型返回不同的状态码
+            if (e.getMessage().contains("昵称已被使用")) {
+                return ResponseEntity.status(400).body(error); // 400 Bad Request
+            } else if (e.getMessage().contains("用户不存在")) {
+                return ResponseEntity.status(404).body(error); // 404 Not Found
+            } else {
+                return ResponseEntity.status(400).body(error); // 400 Bad Request
+            }
+        }
+    }
 }
 

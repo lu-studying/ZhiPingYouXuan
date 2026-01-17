@@ -121,12 +121,16 @@ function request(options) {
           reject(res)
         } else {
           // 其他错误状态码（400, 403, 404, 500 等）
-          const message = res.data?.message || `请求失败: ${res.statusCode}`
-          uni.showToast({ 
-            title: message, 
-            icon: 'none',
-            duration: 2000
-          })
+          // 优先使用 error 字段，如果没有则使用 message 字段
+          const message = res.data?.error || res.data?.message || `请求失败: ${res.statusCode}`
+          // 对于 400 错误，不在这里显示 toast，让调用方自己处理（可以显示更详细的错误信息）
+          if (res.statusCode !== 400) {
+            uni.showToast({ 
+              title: message, 
+              icon: 'none',
+              duration: 2000
+            })
+          }
           reject(res)
         }
       },

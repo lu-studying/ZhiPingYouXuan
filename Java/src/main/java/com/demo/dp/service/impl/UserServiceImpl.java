@@ -89,5 +89,52 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.findById(id);
         return Optional.ofNullable(user);
     }
+
+    /**
+     * 更新用户信息。
+     * 
+     * @param user 用户对象（包含需要更新的字段）
+     * @return 更新后的用户对象
+     * @throws IllegalArgumentException 当用户不存在或昵称已被使用时抛出
+     */
+    @Override
+    @Transactional
+    public User updateUser(User user) {
+        // 检查用户是否存在
+        Optional<User> existingOpt = findById(user.getId());
+        if (existingOpt.isEmpty()) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+
+        User existing = existingOpt.get();
+        
+        // 如果更新昵称，需要检查是否已被其他用户使用
+        if (user.getNickname() != null && !user.getNickname().trim().isEmpty()) {
+            String newNickname = user.getNickname().trim();
+            // 如果新昵称与当前昵称不同，需要查重
+            if (!newNickname.equals(existing.getNickname())) {
+                User duplicateUser = userMapper.findByNickname(newNickname, user.getId());
+                if (duplicateUser != null) {
+                    throw new IllegalArgumentException("该昵称已被使用，请换一个");
+                }
+            }
+            existing.setNickname(newNickname);
+        }
+        
+        if (user.getAvatar() != null) {
+            existing.setAvatar(user.getAvatar());
+        }
+        if (user.getStatus() != null) {
+            existing.setStatus(user.getStatus());
+        }
+        
+        // 更新 updatedAt
+        existing.setUpdatedAt(LocalDateTime.now());
+        
+        // 执行更新
+        userMapper.update(existing);
+        
+        return existing;
+    }
 }
 

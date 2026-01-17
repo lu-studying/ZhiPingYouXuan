@@ -14,14 +14,17 @@
         <result property="likeCount" column="like_count"/>
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
+        <result property="userNickname" column="user_nickname"/>
     </resultMap>
 
     <!-- 根据商家 ID 分页查询 -->
     <select id="findByShopId" resultMap="ReviewResultMap">
-        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
-        FROM review
-        WHERE shop_id = #{shopId} AND status = 1
-        ORDER BY created_at DESC
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+        FROM review r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.shop_id = #{shopId} AND r.status = 1
+        ORDER BY r.created_at DESC
         LIMIT #{offset}, #{limit}
     </select>
 
@@ -34,9 +37,11 @@
 
     <!-- 根据 ID 查询 -->
     <select id="findById" resultMap="ReviewResultMap">
-        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
-        FROM review
-        WHERE id = #{id}
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+        FROM review r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.id = #{id}
     </select>
 
     <!-- 插入点评 -->
@@ -48,24 +53,28 @@
 
     <!-- 基于关键词的店铺点评推荐（带排序） -->
     <select id="findTopByShopAndKeyword" resultMap="ReviewResultMap">
-        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
-        FROM review
-        WHERE shop_id = #{shopId}
-          AND status = 1
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+        FROM review r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.shop_id = #{shopId}
+          AND r.status = 1
           <if test="keyword != null and keyword != ''">
-              AND content LIKE CONCAT('%', #{keyword}, '%')
+              AND r.content LIKE CONCAT('%', #{keyword}, '%')
           </if>
-        ORDER BY like_count DESC, rating DESC, created_at DESC
+        ORDER BY r.like_count DESC, r.rating DESC, r.created_at DESC
         LIMIT #{limit}
     </select>
 
     <!-- 推荐兜底：仅按点赞/评分/时间排序 -->
     <select id="findTopByShop" resultMap="ReviewResultMap">
-        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
-        FROM review
-        WHERE shop_id = #{shopId}
-          AND status = 1
-        ORDER BY like_count DESC, rating DESC, created_at DESC
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+        FROM review r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.shop_id = #{shopId}
+          AND r.status = 1
+        ORDER BY r.like_count DESC, r.rating DESC, r.created_at DESC
         LIMIT #{limit}
     </select>
 
@@ -94,10 +103,12 @@
 
     <!-- 根据用户 ID 分页查询点评列表 -->
     <select id="findByUserId" resultMap="ReviewResultMap">
-        SELECT id, shop_id, user_id, rating, content, images, is_ai_generated, like_count, status, created_at
-        FROM review
-        WHERE user_id = #{userId} AND status = 1
-        ORDER BY created_at DESC
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+        FROM review r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.user_id = #{userId} AND r.status = 1
+        ORDER BY r.created_at DESC
         LIMIT #{offset}, #{limit}
     </select>
 

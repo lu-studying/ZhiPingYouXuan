@@ -64,4 +64,13 @@ public interface UserService {
      * @return 用户对象，如果不存在则返回空
      */
     Optional<User> findById(Long id);
+
+    /**
+     * 更新用户信息。
+     * 
+     * @param user 用户对象（包含需要更新的字段）
+     * @return 更新后的用户对象
+     * @throws IllegalArgumentException 当用户不存在时抛出
+     */
+    User updateUser(User user);
 }
