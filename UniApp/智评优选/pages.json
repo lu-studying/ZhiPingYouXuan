@@ -68,13 +68,13 @@
 			{
 				"pagePath": "pages/home/index",
 				"iconPath": "static/icons/home.png",
-				"selectedIconPath": "static/icons/home-active.png",
+				"selectedIconPath": "static/icons/home.png",
 				"text": "首页"
 			},
 			{
 				"pagePath": "pages/user/index",
 				"iconPath": "static/icons/user.png",
-				"selectedIconPath": "static/icons/user-active.png",
+				"selectedIconPath": "static/icons/user.png",
 				"text": "我的"
 			}
 		]
