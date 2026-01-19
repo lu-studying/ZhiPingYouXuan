@@ -30,6 +30,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useAuthStore } from '@/store/auth'
 import { logout } from '@/api/auth'
 import { getMyInfo, updateMyInfo } from '@/api/users'
@@ -72,11 +73,11 @@ const displayName = computed(() => {
  * 加载用户信息
  */
 const loadUserInfo = async () => {
-  // 先从本地存储获取
+  // 先用本地缓存展示，避免白屏
   userInfo.value = authStore.userInfo || uni.getStorageSync('userInfo')
-  
-  // 如果本地没有，尝试从后端获取
-  if (!userInfo.value && authStore.isLoggedIn) {
+
+  // 只要已登录，就主动向后端拉取最新用户信息，确保昵称/头像实时更新
+  if (authStore.isLoggedIn) {
     try {
       const res = await getMyInfo()
       if (res) {
@@ -90,6 +91,11 @@ const loadUserInfo = async () => {
 }
 
 onMounted(() => {
+  loadUserInfo()
+})
+
+// 页面显示时也刷新一次，解决切换账号后需要刷新才能看到最新昵称的问题
+onShow(() => {
   loadUserInfo()
 })
 

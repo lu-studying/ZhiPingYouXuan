@@ -62,6 +62,14 @@ public interface TagService {
      * @return 标签列表
      */
     List<Tag> listTagsOfUser(Long userId);
+
+    /**
+     * 将标签绑定到指定用户（不清空原有关联，用于用户自建标签时自动绑定）。
+     *
+     * @param userId 用户ID
+     * @param tagId  标签ID
+     */
+    void bindTagToUser(Long userId, Long tagId);
 }
 
 

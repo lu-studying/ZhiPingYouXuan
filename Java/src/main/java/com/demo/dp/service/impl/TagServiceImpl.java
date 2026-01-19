@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 标签服务实现类：实现标签及其与用户/商家的绑定逻辑。
@@ -103,6 +105,19 @@ public class TagServiceImpl implements TagService {
         if (userMapper.findById(userId) == null) {
             throw new RuntimeException("用户不存在，ID: " + userId);
         }
+        // 校验只能使用自己已有的标签（防止跨用户使用）
+        if (tagIds != null && !tagIds.isEmpty()) {
+            List<UserTag> owned = userTagMapper.findByUserId(userId);
+            Set<Long> ownedIds = new HashSet<>();
+            for (UserTag ut : owned) {
+                ownedIds.add(ut.getTagId());
+            }
+            for (Long tid : tagIds) {
+                if (!ownedIds.contains(tid)) {
+                    throw new IllegalArgumentException("只能使用自己创建/拥有的标签");
+                }
+            }
+        }
         // 清空原有绑定
         userTagMapper.deleteByUserId(userId);
         if (tagIds == null || tagIds.isEmpty()) {
@@ -131,6 +146,25 @@ public class TagServiceImpl implements TagService {
             }
         }
         return result;
+    }
+
+    @Override
+    @Transactional
+    public void bindTagToUser(Long userId, Long tagId) {
+        // 防重复插入：先判断是否已存在
+        List<UserTag> owned = userTagMapper.findByUserId(userId);
+        for (UserTag ut : owned) {
+            if (ut.getTagId().equals(tagId)) {
+                return;
+            }
+        }
+        UserTag ut = new UserTag();
+        ut.setUserId(userId);
+        ut.setTagId(tagId);
+        ut.setWeight(1.0);
+        List<UserTag> list = new ArrayList<>();
+        list.add(ut);
+        userTagMapper.insertBatch(list);
     }
 }
 

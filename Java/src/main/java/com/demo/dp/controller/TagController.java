@@ -36,17 +36,35 @@ public class TagController {
      * 创建标签。
      *
      * <p>路径：POST /api/tags
-     * <p>说明：仅简单创建 name + type（user/shop/review），后续可扩展描述等字段。
+     * <p>说明：
+     * - type=user 时必须登录，且创建后仅绑定当前用户，其他用户不可见/不可用。
+     * - type=shop/review 按原逻辑创建。
      */
     @PostMapping("/tags")
-    public ResponseEntity<?> createTag(@RequestBody TagCreateRequest req) {
+    public ResponseEntity<?> createTag(@RequestBody TagCreateRequest req, Authentication authentication) {
         if (req.getName() == null || req.getName().isBlank()) {
             return error(400, "标签名称不能为空");
         }
         if (req.getType() == null || req.getType().isBlank()) {
             return error(400, "标签类型不能为空");
         }
-        Tag tag = tagService.createTag(req.getName().trim(), req.getType().trim());
+
+        String type = req.getType().trim();
+        String name = req.getName().trim();
+
+        // user 类型标签，必须登录且只绑定当前用户
+        if ("user".equalsIgnoreCase(type)) {
+            if (authentication == null) {
+                return error(401, "请先登录");
+            }
+            Long userId = Long.parseLong(authentication.getName());
+            Tag tag = tagService.createTag(name, type);
+            tagService.bindTagToUser(userId, tag.getId());
+            return ResponseEntity.ok(tag);
+        }
+
+        // 其他类型保持原逻辑
+        Tag tag = tagService.createTag(name, type);
         return ResponseEntity.ok(tag);
     }
 
@@ -54,12 +72,24 @@ public class TagController {
      * 查询某类型的标签列表。
      *
      * <p>路径：GET /api/tags?type=shop
+     * <p>业务规则：type=user 时仅返回“当前用户已绑定的标签”，其他用户看不到。
      */
     @GetMapping("/tags")
-    public ResponseEntity<List<Tag>> listTags(@RequestParam(required = false) String type) {
+    public ResponseEntity<?> listTags(@RequestParam(required = false) String type,
+                                      Authentication authentication) {
         if (type == null || type.isBlank()) {
             return ResponseEntity.ok(tagService.listAll());
         }
+
+        // 用户私有标签：必须登录，仅返回自己的
+        if ("user".equalsIgnoreCase(type)) {
+            if (authentication == null) {
+                return error(401, "请先登录");
+            }
+            Long userId = Long.parseLong(authentication.getName());
+            return ResponseEntity.ok(tagService.listTagsOfUser(userId));
+        }
+
         return ResponseEntity.ok(tagService.listByType(type));
     }
 

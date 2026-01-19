@@ -35,6 +35,22 @@ export function listTags(type = null) {
 }
 
 /**
+ * 创建标签
+ *
+ * @param {Object} data
+ * @param {string} data.name - 标签名称
+ * @param {string} data.type - 标签类型（user/shop/review）
+ * @returns {Promise<Object>} 创建后的标签对象
+ */
+export function createTag(data) {
+  return request({
+    url: '/tags',
+    method: 'post',
+    data
+  })
+}
+
+/**
  * 获取商家已绑定的标签列表
  * 
  * @param {number} shopId - 商家ID
