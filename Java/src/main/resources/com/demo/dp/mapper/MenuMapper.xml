@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    MyBatis Mapper XML 映射文件：菜单数据访问层SQL定义
+    
+    该文件定义了 MenuMapper 接口中所有方法对应的SQL语句。
+-->
+<mapper namespace="com.demo.dp.mapper.MenuMapper">
+
+    <!-- 结果映射：定义数据库字段与Java对象属性的映射关系 -->
+    <resultMap id="MenuResultMap" type="com.demo.dp.domain.entity.Menu">
+        <!-- 主键字段：id -->
+        <id property="id" column="id"/>
+        
+        <!-- 商家ID -->
+        <result property="shopId" column="shop_id"/>
+        
+        <!-- 菜品名称 -->
+        <result property="name" column="name"/>
+        
+        <!-- 菜品描述 -->
+        <result property="description" column="description"/>
+        
+        <!-- 价格 -->
+        <result property="price" column="price"/>
+        
+        <!-- 图片URL -->
+        <result property="image" column="image"/>
+        
+        <!-- 是否推荐：1是，0否 -->
+        <result property="isRecommended" column="is_recommended"/>
+        
+        <!-- 排序顺序 -->
+        <result property="sortOrder" column="sort_order"/>
+        
+        <!-- 状态：1正常，0下线 -->
+        <result property="status" column="status"/>
+        
+        <!-- 创建时间 -->
+        <result property="createdAt" column="created_at"/>
+        
+        <!-- 更新时间 -->
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 根据商家ID查询推荐菜单列表 -->
+    <select id="findRecommendedByShopId" resultMap="MenuResultMap">
+        SELECT id, shop_id, name, description, price, image, is_recommended, sort_order, status, created_at, updated_at
+        FROM menu
+        WHERE shop_id = #{shopId}
+          AND is_recommended = 1
+          AND status = 1
+        ORDER BY sort_order ASC, created_at DESC
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 根据商家ID查询所有菜单 -->
+    <select id="findByShopId" resultMap="MenuResultMap">
+        SELECT id, shop_id, name, description, price, image, is_recommended, sort_order, status, created_at, updated_at
+        FROM menu
+        WHERE shop_id = #{shopId}
+          AND status = 1
+        ORDER BY is_recommended DESC, sort_order ASC, created_at DESC
+    </select>
+
+    <!-- 根据主键ID查询菜单信息 -->
+    <select id="findById" resultMap="MenuResultMap">
+        SELECT id, shop_id, name, description, price, image, is_recommended, sort_order, status, created_at, updated_at
+        FROM menu
+        WHERE id = #{id}
+          AND status = 1
+    </select>
+
+    <!-- 插入新菜单记录 -->
+    <insert id="insert" parameterType="com.demo.dp.domain.entity.Menu" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO menu (shop_id, name, description, price, image, is_recommended, sort_order, status, created_at, updated_at)
+        VALUES (
+            #{shopId},
+            #{name},
+            #{description},
+            #{price},
+            #{image},
+            COALESCE(#{isRecommended}, 0),
+            COALESCE(#{sortOrder}, 0),
+            COALESCE(#{status}, 1),
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 更新菜单记录 -->
+    <update id="update" parameterType="com.demo.dp.domain.entity.Menu">
+        UPDATE menu
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="isRecommended != null">is_recommended = #{isRecommended},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除菜单（软删除，设置status=0） -->
+    <update id="delete">
+        UPDATE menu
+        SET status = 0, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>
+

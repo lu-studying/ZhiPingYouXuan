@@ -33,6 +33,9 @@ import java.util.List;
  *       <li>GET /api/shops - 获取商家列表（查询、搜索、筛选）</li>
  *       <li>GET /api/shops/{id} - 获取商家详情</li>
  *       <li>GET /api/shops/{shopId}/reviews - 获取商家点评列表</li>
+ *       <li>GET /api/menus/shop/{shopId}/recommended - 获取商家推荐菜单</li>
+ *       <li>GET /api/menus/shop/{shopId} - 获取商家所有菜单</li>
+ *       <li>GET /api/menus/{id} - 获取菜单详情</li>
  *     </ul>
  *   </li>
  *   <li>需要认证的接口：
@@ -98,11 +101,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/login", "/api/users/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users/register").permitAll()
 
-                // 公开查询（商家/点评）
+                // 公开查询（商家/点评/菜单）
                 .requestMatchers(HttpMethod.GET, "/api/shops").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/shops/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/shops/*/reviews").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/shops/*/reviews/recommend").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/menus/shop/*/recommended").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/menus/shop/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/menus/*").permitAll()
 
                 // 仪表盘、用户管理、AI日志查询需要认证（管理端功能）
                 // 注意：这些接口需要登录后才能访问，用于管理端数据展示

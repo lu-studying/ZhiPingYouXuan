@@ -31,6 +31,28 @@
         </view>
       </view>
       
+      <!-- 特别推荐菜单区域 -->
+      <view class="recommended-menus-section">
+        <view class="section-header">
+          <text class="section-title">🍽️ 特别推荐菜单</text>
+        </view>
+        <view v-if="recommendedMenus.length > 0" class="menus-list">
+          <menu-card 
+            v-for="menu in recommendedMenus" 
+            :key="menu.id"
+            :menu="menu"
+            @click="handleMenuClick"
+          />
+        </view>
+        <view v-else class="menu-empty-placeholder">
+          <view class="placeholder-card">
+            <text class="placeholder-icon">🍽️</text>
+            <text class="placeholder-text">暂无推荐菜品</text>
+            <text class="placeholder-hint">商家正在准备中...</text>
+          </view>
+        </view>
+      </view>
+      
       <!-- AI 推荐点评区域 -->
       <view v-if="recommendedReviews.length > 0" class="ai-recommend-section">
         <view class="section-header">
@@ -96,9 +118,11 @@ import { ref, onMounted } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { getShop } from '@/api/shops'
 import { recommendReviews, listReviews } from '@/api/reviews'
+import { getRecommendedMenus } from '@/api/menus'
 import { formatAvgPrice } from '@/utils/format'
 import RatingStars from '@/components/rating-stars.vue'
 import ReviewCard from '@/components/review-card.vue'
+import MenuCard from '@/components/menu-card.vue'
 import Loading from '@/components/loading.vue'
 import EmptyState from '@/components/empty-state.vue'
 import { useAuthStore } from '@/store/auth'
@@ -107,6 +131,7 @@ const shop = ref(null)
 const loading = ref(true)
 const shopId = ref(null)
 
+const recommendedMenus = ref([])
 const recommendedReviews = ref([])
 const reviews = ref([])
 const reviewsLoading = ref(false)
@@ -124,6 +149,7 @@ onMounted(() => {
   
   if (shopId.value) {
     loadShopDetail(shopId.value)
+    loadRecommendedMenus()
     loadRecommendedReviews()
     loadReviews()
   } else {
@@ -145,6 +171,22 @@ const loadShopDetail = async (id) => {
     uni.showToast({ title: '加载失败', icon: 'none' })
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 加载特别推荐菜单
+ */
+const loadRecommendedMenus = async () => {
+  if (!shopId.value) return
+  
+  try {
+    const data = await getRecommendedMenus(shopId.value, 6) // 最多显示6个推荐菜单
+    console.log('推荐菜单数据:', data)
+    recommendedMenus.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('加载推荐菜单失败:', error)
+    recommendedMenus.value = []
   }
 }
 
@@ -206,6 +248,20 @@ const loadReviews = async (isLoadMore = false) => {
 }
 
 /**
+ * 处理菜单点击事件
+ */
+const handleMenuClick = (menu) => {
+  // 可以在这里添加菜单详情页跳转或其他交互
+  console.log('点击菜单:', menu)
+  // 暂时只做提示，后续可以扩展为菜单详情页
+  uni.showToast({
+    title: menu.name,
+    icon: 'none',
+    duration: 1500
+  })
+}
+
+/**
  * 跳转到创建点评页
  */
 const goToCreateReview = () => {
@@ -238,6 +294,7 @@ onPullDownRefresh(() => {
   if (id) {
     Promise.all([
       loadShopDetail(id),
+      loadRecommendedMenus(),
       loadRecommendedReviews(),
       loadReviews(false)
     ]).finally(() => {
@@ -360,6 +417,54 @@ onReachBottom(() => {
 }
 
 .review-count {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 特别推荐菜单区域 */
+.recommended-menus-section {
+  margin-top: 20rpx;
+}
+
+.menus-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-empty-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40rpx 0;
+}
+
+.placeholder-card {
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 60rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.placeholder-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.6;
+}
+
+.placeholder-text {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.placeholder-hint {
   font-size: 24rpx;
   color: #999;
 }
