@@ -27,6 +27,7 @@
         v-for="shop in shops" 
         :key="shop.id"
         :shop="shop"
+        :recommended-menus="recommendedMenusMap[shop.id] || []"
       />
       
       <empty-state 
@@ -50,6 +51,7 @@
 import { ref, onMounted } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { listShops } from '@/api/shops'
+import { getRecommendedMenus } from '@/api/menus'
 import ShopCard from '@/components/shop-card.vue'
 import Loading from '@/components/loading.vue'
 import EmptyState from '@/components/empty-state.vue'
@@ -58,6 +60,8 @@ import { debounce } from '@/utils/debounce'
 const searchKeyword = ref('')
 const selectedCategory = ref('全部')
 const shops = ref([])
+// shopId -> 推荐菜单数组
+const recommendedMenusMap = ref({})
 const loading = ref(false)
 const page = ref(0)
 const hasMore = ref(true)
@@ -96,7 +100,12 @@ const loadShops = async (isLoadMore = false) => {
       shops.value = [...shops.value, ...newShops]
     } else {
       shops.value = newShops
+      // 重置推荐菜单缓存
+      recommendedMenusMap.value = {}
     }
+
+    // 异步加载每个商家的推荐菜单（最多 2 个）
+    loadRecommendedMenusForShops(newShops)
     
     // 判断是否还有更多
     hasMore.value = shops.value.length < total
@@ -111,6 +120,30 @@ const loadShops = async (isLoadMore = false) => {
     loading.value = false
     loadingMore.value = false
   }
+}
+
+/**
+ * 为一批商家加载推荐菜单
+ */
+const loadRecommendedMenusForShops = async (shopList) => {
+  if (!Array.isArray(shopList) || shopList.length === 0) return
+
+  const tasks = shopList.map(async (shop) => {
+    if (!shop?.id) return
+    try {
+      const menus = await getRecommendedMenus(shop.id, 2)
+      if (Array.isArray(menus) && menus.length > 0) {
+        recommendedMenusMap.value = {
+          ...recommendedMenusMap.value,
+          [shop.id]: menus
+        }
+      }
+    } catch (e) {
+      console.error('加载推荐菜单失败:', e)
+    }
+  })
+
+  await Promise.all(tasks)
 }
 
 /**

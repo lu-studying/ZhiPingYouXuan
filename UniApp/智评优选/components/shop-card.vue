@@ -16,6 +16,38 @@
         <text class="price-text">{{ formatAvgPrice(shop.avgPrice) }}</text>
       </view>
     </view>
+
+    <!-- 推荐菜单简要展示（无数据也展示占位） -->
+    <view class="recommended-menus">
+      <text class="recommended-label">推荐菜：</text>
+      <scroll-view
+        v-if="hasRecommendedMenus"
+        class="recommended-scroll"
+        scroll-x="true"
+        show-scrollbar="false"
+      >
+        <view
+          v-for="(item, index) in limitedRecommendedMenus"
+          :key="item.id || index"
+          class="menu-thumb"
+        >
+          <view class="menu-thumb-image-wrapper">
+            <image
+              v-if="item.image"
+              class="menu-thumb-image"
+              :src="item.image"
+              mode="aspectFill"
+            />
+            <view v-else class="menu-thumb-placeholder">
+              <text class="menu-thumb-icon">🍽️</text>
+            </view>
+          </view>
+          <text class="menu-thumb-name">{{ item.name }}</text>
+          <text class="menu-thumb-price">{{ formatPrice(item.price) }}</text>
+        </view>
+      </scroll-view>
+      <text v-else class="recommended-placeholder">商家暂未设置推荐菜品</text>
+    </view>
     
     <view v-if="shop.tags && shop.tags.length > 0" class="shop-tags">
       <view 
@@ -30,8 +62,9 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import RatingStars from './rating-stars.vue'
-import { formatAvgPrice } from '@/utils/format'
+import { formatAvgPrice, formatPrice } from '@/utils/format'
 
 /**
  * 商家卡片组件
@@ -53,10 +86,26 @@ const props = defineProps({
     validator: (value) => {
       return value && value.id && value.name
     }
+  },
+  // 首页传入的推荐菜单简要信息
+  recommendedMenus: {
+    type: Array,
+    default: () => []
   }
 })
 
 const emit = defineEmits(['click'])
+
+// 是否有推荐菜
+const hasRecommendedMenus = computed(() => {
+  return Array.isArray(props.recommendedMenus) && props.recommendedMenus.length > 0
+})
+
+// 只展示前 2~3 个推荐菜名，避免一行太长
+const limitedRecommendedMenus = computed(() => {
+  if (!props.recommendedMenus) return []
+  return props.recommendedMenus.slice(0, 3)
+})
 
 /**
  * 处理卡片点击事件
@@ -145,6 +194,85 @@ const handleClick = () => {
   font-size: 26rpx;
   color: #ff6b35;
   font-weight: 500;
+}
+
+/* 推荐菜单简要区域 */
+.recommended-menus {
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+  display: flex;
+  align-items: flex-start;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.recommended-label {
+  color: #ff9f43;
+  font-weight: 500;
+  margin-right: 8rpx;
+}
+
+.recommended-scroll {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.menu-thumb {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 180rpx;
+  margin-right: 16rpx;
+}
+
+.menu-thumb-image-wrapper {
+  width: 180rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-thumb-image {
+  width: 100%;
+  height: 100%;
+}
+
+.menu-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-thumb-icon {
+  font-size: 40rpx;
+}
+
+.menu-thumb-name {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-thumb-price {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #ff6b35;
+}
+
+.recommended-placeholder {
+  font-size: 24rpx;
+  color: #aaa;
+  flex: 1;
 }
 
 .shop-tags {
