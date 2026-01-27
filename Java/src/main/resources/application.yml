@@ -55,3 +55,18 @@ ai:
   model: "qwen3-max"          # 你的模型代号
   timeout-ms: 8000            # 读取超时
 
+# 本地文件存储配置
+file:
+  upload:
+    # 文件存储根目录（相对于项目根目录或绝对路径）
+    # 例如：uploads/ 表示存储在项目根目录下的 uploads 文件夹
+    # 或者：D:/uploads/ 表示存储在 D 盘的 uploads 文件夹
+    base-path: uploads/
+    # 图片访问路径前缀（用于返回给前端）
+    # 例如：/uploads/ 表示通过 http://localhost:8080/uploads/xxx.jpg 访问
+    access-path: /uploads/
+    # 允许的文件类型（MIME类型）
+    allowed-types: image/jpeg,image/jpg,image/png,image/gif,image/webp
+    # 最大文件大小（字节），默认 5MB
+    max-size: 5242880
+

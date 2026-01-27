@@ -110,6 +110,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/menus/shop/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/menus/*").permitAll()
 
+                // 静态资源访问（上传的图片文件）
+                .requestMatchers("/uploads/**").permitAll()
+
+                // 文件上传接口需要认证（用户登录后才能上传）
+                // 注意：文件上传接口需要认证，防止未授权上传
+
                 // 仪表盘、用户管理、AI日志查询需要认证（管理端功能）
                 // 注意：这些接口需要登录后才能访问，用于管理端数据展示
 
