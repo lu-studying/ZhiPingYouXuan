@@ -104,6 +104,18 @@ export function deleteShop(id) {
 }
 
 /**
+ * 获取当前商家拥有的店铺列表（仅商家账号）
+ * 
+ * @returns {Promise<Array>} 店铺列表
+ */
+export function getMyShops() {
+  return request({
+    url: '/shops/my',
+    method: 'get'
+  })
+}
+
+/**
  * 获取商家总数（用于统计）
  * 
  * @returns {Promise<number>} 商家总数

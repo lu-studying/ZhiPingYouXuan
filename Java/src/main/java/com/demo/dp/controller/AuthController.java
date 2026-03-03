@@ -3,6 +3,7 @@ package com.demo.dp.controller;
 import com.demo.dp.domain.entity.User;
 import com.demo.dp.dto.AuthResponse;
 import com.demo.dp.dto.UserLoginRequest;
+import com.demo.dp.mapper.RoleMapper;
 import com.demo.dp.service.UserService;
 import com.demo.dp.util.JwtUtil;
 import org.slf4j.Logger;
@@ -31,11 +32,16 @@ public class AuthController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final RoleMapper roleMapper;
 
-    public AuthController(UserService userService, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+    public AuthController(UserService userService,
+                          JwtUtil jwtUtil,
+                          PasswordEncoder passwordEncoder,
+                          RoleMapper roleMapper) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.roleMapper = roleMapper;
     }
 
     @PostMapping("/register")
@@ -45,8 +51,16 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
         User saved = userService.register(req.getMobileOrEmail(), req.getPassword());
-        String token = jwtUtil.generateToken(saved.getId(), Map.of("uid", saved.getId()));
-        log.info("register success, userId={}, token={}", saved.getId(), token);
+        // 查询用户角色列表，如果没有记录则默认给一个 USER 角色，方便前台使用
+        java.util.List<String> roles = roleMapper.findRoleCodesByUserId(saved.getId());
+        if (roles == null || roles.isEmpty()) {
+            roles = java.util.List.of("USER");
+        }
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("uid", saved.getId());
+        claims.put("roles", roles);
+        String token = jwtUtil.generateToken(saved.getId(), claims);
+        log.info("register success, userId={}, roles={}, token={}", saved.getId(), roles, token);
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
@@ -64,8 +78,16 @@ public class AuthController {
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
             return error(401, "账号或密码错误");
         }
-        String token = jwtUtil.generateToken(user.getId(), Map.of("uid", user.getId()));
-        log.info("login success, userId={}, token={}", user.getId(), token);
+        // 查询角色列表（如 ADMIN / MERCHANT / USER 等），为空则默认 USER
+        java.util.List<String> roles = roleMapper.findRoleCodesByUserId(user.getId());
+        if (roles == null || roles.isEmpty()) {
+            roles = java.util.List.of("USER");
+        }
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("uid", user.getId());
+        claims.put("roles", roles);
+        String token = jwtUtil.generateToken(user.getId(), claims);
+        log.info("login success, userId={}, roles={}, token={}", user.getId(), roles, token);
         return ResponseEntity.ok(new AuthResponse(token));
     }
 

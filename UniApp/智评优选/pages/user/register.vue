@@ -249,16 +249,22 @@ const goToLogin = () => {
 <style scoped>
 .register-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f5f5f5;
+  background-image: url('/static/icons/loginBG.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 40rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  --auth-right-gap: 350rpx;
 }
 
 .form {
   width: 100%;
   max-width: 600rpx;
+  margin-right: var(--auth-right-gap, 350rpx);
   background-color: #fff;
   padding: 60rpx 40rpx;
   border-radius: 24rpx;

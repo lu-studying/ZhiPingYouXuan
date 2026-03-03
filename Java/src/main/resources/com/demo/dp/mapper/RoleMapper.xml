@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.RoleMapper">
+
+    <!--
+        根据用户 ID 查询其角色编码列表。
+        例如返回：ADMIN / MERCHANT / USER 等。
+    -->
+    <select id="findRoleCodesByUserId" resultType="string">
+        SELECT r.code
+        FROM user_role ur
+        JOIN role r ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+    </select>
+
+</mapper>
+
+

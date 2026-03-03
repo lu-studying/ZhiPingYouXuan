@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { STORAGE_KEY_TOKEN, STORAGE_KEY_USER_INFO } from '@/utils/constants'
-import { isTokenExpired } from '@/utils/jwt'
+import { isTokenExpired, parseToken } from '@/utils/jwt'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -29,6 +29,43 @@ export const useAuthStore = defineStore('auth', {
         return false
       }
       return true
+    },
+    
+    /**
+     * 获取当前用户的角色列表（从 JWT token 中解析）
+     * @returns {Array<string>} 角色代码列表，如 ['ADMIN', 'MERCHANT'] 或 ['USER']
+     */
+    roles: (state) => {
+      if (!state.token) {
+        return []
+      }
+      const payload = parseToken(state.token)
+      if (!payload || !payload.roles) {
+        return []
+      }
+      // roles 可能是数组或单个字符串
+      return Array.isArray(payload.roles) ? payload.roles : [payload.roles]
+    },
+    
+    /**
+     * 检查当前用户是否是管理员
+     */
+    isAdmin: (state, getters) => {
+      return getters.roles.includes('ADMIN')
+    },
+    
+    /**
+     * 检查当前用户是否是商家
+     */
+    isMerchant: (state, getters) => {
+      return getters.roles.includes('MERCHANT')
+    },
+    
+    /**
+     * 检查当前用户是否是普通用户
+     */
+    isUser: (state, getters) => {
+      return getters.roles.includes('USER') && !getters.isAdmin && !getters.isMerchant
     }
   },
   

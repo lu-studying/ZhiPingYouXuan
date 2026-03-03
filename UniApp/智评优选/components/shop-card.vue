@@ -35,7 +35,7 @@
             <image
               v-if="item.image"
               class="menu-thumb-image"
-              :src="item.image"
+              :src="getImageUrl(item.image)"
               mode="aspectFill"
             />
             <view v-else class="menu-thumb-placeholder">
@@ -64,7 +64,7 @@
 <script setup>
 import { computed } from 'vue'
 import RatingStars from './rating-stars.vue'
-import { formatAvgPrice, formatPrice } from '@/utils/format'
+import { formatAvgPrice, formatPrice, getImageUrl } from '@/utils/format'
 
 /**
  * 商家卡片组件

@@ -266,5 +266,19 @@ public class ShopServiceImpl implements ShopService {
         // 执行数据库更新操作，将status更新为0
         shopMapper.update(shop);
     }
+
+    /**
+     * 根据归属商家用户ID查询店铺列表的实现方法。
+     * 
+     * @param ownerUserId 归属商家用户ID
+     * @return 店铺列表，如果不存在则返回空列表
+     */
+    @Override
+    public List<Shop> findByOwnerUserId(Long ownerUserId) {
+        if (ownerUserId == null) {
+            return List.of();
+        }
+        return shopMapper.findByOwnerUserId(ownerUserId);
+    }
 }
 

@@ -3,7 +3,7 @@
     <view class="menu-image-wrapper" v-if="menu.image">
       <image 
         class="menu-image" 
-        :src="menu.image" 
+        :src="getImageUrl(menu.image)" 
         mode="aspectFill"
         :lazy-load="true"
       />
@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { formatPrice } from '@/utils/format'
+import { formatPrice, getImageUrl } from '@/utils/format'
 
 const props = defineProps({
   menu: {
@@ -43,8 +43,6 @@ const emit = defineEmits(['click'])
 const handleClick = () => {
   emit('click', props.menu)
 }
-
-// formatPrice 已经在 utils/format.js 中定义，这里直接使用
 </script>
 
 <style scoped>

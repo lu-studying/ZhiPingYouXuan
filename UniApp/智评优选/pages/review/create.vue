@@ -44,7 +44,7 @@
               :key="index"
               class="image-item"
             >
-              <image :src="image" mode="aspectFill" class="image-preview" @click="previewImage(index)" />
+              <image :src="getImageUrl(image)" mode="aspectFill" class="image-preview" @click="previewImage(index)" />
               <view class="image-delete" @click="removeImage(index)">
                 <text class="delete-icon">×</text>
               </view>
@@ -78,7 +78,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { createReview, generateAiDraft } from '@/api/reviews'
+import { uploadFile } from '@/api/files'
 import RatingStars from '@/components/rating-stars.vue'
+import { getImageUrl } from '@/utils/format'
 
 const rating = ref(0)
 const content = ref('')
@@ -195,9 +197,9 @@ const handleSubmit = async () => {
 }
 
 /**
- * 选择图片
+ * 选择图片并上传
  */
-const chooseImage = () => {
+const chooseImage = async () => {
   const maxCount = 9 - images.value.length
   if (maxCount <= 0) {
     uni.showToast({ title: '最多只能上传9张图片', icon: 'none' })
@@ -208,14 +210,31 @@ const chooseImage = () => {
     count: maxCount,
     sizeType: ['compressed'], // 压缩图
     sourceType: ['album', 'camera'], // 相册和相机
-    success: (res) => {
-      // 将选择的图片添加到列表
-      const tempFilePaths = res.tempFilePaths
-      images.value = [...images.value, ...tempFilePaths]
+    success: async (res) => {
+      // 显示上传进度
+      uni.showLoading({ title: '上传中...', mask: true })
       
-      // 注意：这里使用的是本地临时路径
-      // 如果需要上传到服务器，需要调用上传接口获取URL
-      // 目前先使用本地路径，后续可以完善上传功能
+      try {
+        // 上传所有选择的图片
+        const uploadPromises = res.tempFilePaths.map(filePath => 
+          uploadFile(filePath, 'review/')
+        )
+        
+        const uploadResults = await Promise.all(uploadPromises)
+        
+        // 获取上传后的相对路径（后端返回的路径，如 /uploads/review/xxx.jpg）
+        const uploadedUrls = uploadResults.map(result => result.relativeUrl || result.url)
+        
+        // 添加到图片列表（保存相对路径，提交时使用）
+        images.value = [...images.value, ...uploadedUrls]
+        
+        uni.hideLoading()
+        uni.showToast({ title: '上传成功', icon: 'success', duration: 1500 })
+      } catch (error) {
+        console.error('上传图片失败:', error)
+        uni.hideLoading()
+        uni.showToast({ title: '上传失败，请重试', icon: 'none' })
+      }
     },
     fail: (error) => {
       console.error('选择图片失败:', error)
@@ -228,9 +247,11 @@ const chooseImage = () => {
  * 预览图片
  */
 const previewImage = (index) => {
+  // 预览时需要转换为完整URL
+  const fullUrls = images.value.map(img => getImageUrl(img))
   uni.previewImage({
-    urls: images.value,
-    current: images.value[index]
+    urls: fullUrls,
+    current: fullUrls[index]
   })
 }
 

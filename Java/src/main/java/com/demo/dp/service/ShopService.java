@@ -143,5 +143,13 @@ public interface ShopService {
      * @throws RuntimeException 如果商家不存在（ID不存在）或删除失败
      */
     void deleteShop(Long id);
+
+    /**
+     * 根据归属商家用户ID查询店铺列表。
+     * 
+     * @param ownerUserId 归属商家用户ID
+     * @return 店铺列表，如果不存在则返回空列表
+     */
+    List<Shop> findByOwnerUserId(Long ownerUserId);
 }
 

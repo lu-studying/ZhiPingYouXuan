@@ -57,6 +57,30 @@
 			"style": {
 				"navigationBarTitleText": "偏好设置"
 			}
+		},
+		{
+			"path": "pages/admin/login",
+			"style": {
+				"navigationBarTitleText": "管理端登录"
+			}
+		},
+		{
+			"path": "pages/admin/index",
+			"style": {
+				"navigationBarTitleText": "管理端"
+			}
+		},
+		{
+			"path": "pages/admin/users",
+			"style": {
+				"navigationBarTitleText": "用户管理"
+			}
+		},
+		{
+			"path": "pages/admin/menus",
+			"style": {
+				"navigationBarTitleText": "菜单管理"
+			}
 		}
 	],
 	"tabBar": {

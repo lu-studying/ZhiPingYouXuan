@@ -5,6 +5,8 @@
  * 提供日期、价格、评分等数据的格式化函数
  */
 
+import { BASE_URL } from '@/utils/constants'
+
 /**
  * 格式化日期
  * 
@@ -158,5 +160,44 @@ export function formatNumber(num) {
   }
   
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+/**
+ * 获取图片完整URL
+ * 
+ * @param {string} imagePath - 图片路径（相对路径或完整URL）
+ * @param {string} baseUrl - 基础URL（可选，默认从 constants 导入）
+ * @returns {string} 完整的图片URL
+ * 
+ * @example
+ * getImageUrl('/uploads/menu/xxx.png') // 'http://localhost:8080/uploads/menu/xxx.png'
+ * getImageUrl('http://example.com/image.jpg') // 'http://example.com/image.jpg'
+ */
+export function getImageUrl(imagePath, baseUrl) {
+  if (!imagePath) return ''
+  
+  // 如果已经是完整 URL，直接返回
+  if (imagePath.startsWith('http')) {
+    return imagePath
+  }
+  
+  // 如果没有传入 baseUrl，使用导入的 BASE_URL
+  if (!baseUrl) {
+    baseUrl = BASE_URL
+  }
+  
+  // 如果路径以 /uploads/ 开头，说明是静态资源
+  // 需要拼接后端地址（去掉 /api 后缀，因为静态资源不在 /api 下）
+  if (imagePath.startsWith('/uploads/')) {
+    return baseUrl.replace('/api', '') + imagePath
+  }
+  
+  // 其他相对路径，如果是 / 开头，直接返回
+  if (imagePath.startsWith('/')) {
+    return imagePath
+  }
+  
+  // 如果是不带 / 的相对路径，添加 /uploads/ 前缀（兼容旧数据）
+  return baseUrl.replace('/api', '') + '/uploads/' + imagePath
 }
 

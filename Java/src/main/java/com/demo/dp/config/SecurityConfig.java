@@ -3,6 +3,7 @@ package com.demo.dp.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -50,6 +51,7 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)  // 启用方法级安全，支持 @PreAuthorize 注解
 public class SecurityConfig {
 
     /**
@@ -115,6 +117,24 @@ public class SecurityConfig {
 
                 // 文件上传接口需要认证（用户登录后才能上传）
                 // 注意：文件上传接口需要认证，防止未授权上传
+
+                // 管理端接口：仅 ADMIN 角色可访问
+                .requestMatchers("/api/users").hasRole("ADMIN")  // 用户列表查询
+                .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+
+                // 商家管理接口：
+                // - 创建/删除商家：仅 ADMIN
+                // - 更新商家：ADMIN 或 MERCHANT，具体权限在控制器中根据 ownerUserId 校验
+                .requestMatchers(HttpMethod.POST, "/api/shops").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/shops/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/shops/*").hasAnyRole("MERCHANT", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/shops/my").hasAnyRole("MERCHANT", "ADMIN")
+
+                // 商家菜单管理接口：MERCHANT 或 ADMIN 可访问
+                // 注意：商家只能管理自己的店铺，在控制器中做进一步校验
+                .requestMatchers(HttpMethod.POST, "/api/menus").hasAnyRole("MERCHANT", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/menus/*").hasAnyRole("MERCHANT", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/menus/*").hasAnyRole("MERCHANT", "ADMIN")
 
                 // 仪表盘、用户管理、AI日志查询需要认证（管理端功能）
                 // 注意：这些接口需要登录后才能访问，用于管理端数据展示

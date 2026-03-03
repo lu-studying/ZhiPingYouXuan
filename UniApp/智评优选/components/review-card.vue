@@ -59,7 +59,7 @@
         class="image-item"
         @click="previewImage(image, index)"
       >
-        <image :src="image" mode="aspectFill" class="image" />
+        <image :src="getImageUrl(image)" mode="aspectFill" class="image" />
       </view>
     </view>
     
@@ -76,7 +76,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import RatingStars from './rating-stars.vue'
-import { formatRelativeTime } from '@/utils/format'
+import { formatRelativeTime, getImageUrl } from '@/utils/format'
 import { likeReview } from '@/api/reviews'
 
 /**
@@ -201,9 +201,11 @@ const getUserInitial = (name) => {
  * 预览图片
  */
 const previewImage = (current, index) => {
+  // 预览时需要转换为完整URL
+  const fullUrls = reviewImages.value.map(img => getImageUrl(img))
   uni.previewImage({
-    urls: reviewImages.value,
-    current: current
+    urls: fullUrls,
+    current: getImageUrl(current)
   })
 }
 

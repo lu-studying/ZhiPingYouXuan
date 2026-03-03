@@ -25,6 +25,8 @@ public class Shop {
 
     private Integer status; // 状态：1 正常，0 下线
 
+    private Long ownerUserId; // 归属商家用户ID（商家账号）
+
     private LocalDateTime createdAt; // 创建时间
 
     private LocalDateTime updatedAt; // 更新时间
@@ -48,6 +50,8 @@ public class Shop {
     public void setAvgScore(Double avgScore) { this.avgScore = avgScore; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public Long getOwnerUserId() { return ownerUserId; }
+    public void setOwnerUserId(Long ownerUserId) { this.ownerUserId = ownerUserId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

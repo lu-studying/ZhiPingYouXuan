@@ -50,6 +50,9 @@
         <!-- 状态：1=正常，0=已删除/下线 -->
         <result property="status" column="status"/>
         
+        <!-- 归属商家用户ID：数据库字段 owner_user_id 映射到 Java 属性 ownerUserId -->
+        <result property="ownerUserId" column="owner_user_id"/>
+        
         <!-- 创建时间：数据库字段 created_at 映射到 Java 属性 createdAt -->
         <result property="createdAt" column="created_at"/>
         
@@ -69,7 +72,7 @@
         - #{id} 会被替换为方法参数中的id值
     -->
     <select id="findById" resultMap="ShopResultMap">
-        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at
+        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
         FROM shop
         WHERE id = #{id}
     </select>
@@ -89,9 +92,9 @@
         - NOW()：MySQL函数，返回当前时间，用于设置created_at和updated_at字段
     -->
     <insert id="insert" parameterType="com.demo.dp.domain.entity.Shop" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO shop (name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at)
+        INSERT INTO shop (name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at)
         VALUES (#{name}, #{category}, #{address}, #{lng}, #{lat}, #{avgPrice}, #{avgScore}, 
-                COALESCE(#{status}, 1), NOW(), NOW())
+                COALESCE(#{status}, 1), #{ownerUserId}, NOW(), NOW())
     </insert>
 
     <!--
@@ -120,6 +123,7 @@
             avg_price = #{avgPrice},
             avg_score = #{avgScore},
             status = #{status},
+            owner_user_id = #{ownerUserId},
             updated_at = NOW()
         WHERE id = #{id}
     </update>
@@ -156,7 +160,7 @@
            - 例如：LIMIT 0, 10 表示从第0条开始，返回10条记录
     -->
     <select id="findByConditions" resultMap="ShopResultMap">
-        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, created_at, updated_at
+        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
         FROM shop
         <where>
             <!-- 只查询正常状态的商家，已删除的商家不显示 -->
@@ -254,6 +258,24 @@
         WHERE status = 1
           AND created_at >= #{startDate}
           AND created_at &lt;= #{endDate}
+    </select>
+
+    <!--
+        根据归属商家用户ID查询店铺
+        
+        id="findByOwnerUserId"：对应 ShopMapper 接口中的 findByOwnerUserId 方法
+        resultMap="ShopResultMap"：使用上面定义的结果映射
+        
+        SQL说明：
+        - 查询指定 owner_user_id 的所有店铺
+        - 只返回 status=1（正常状态）的店铺
+    -->
+    <select id="findByOwnerUserId" resultMap="ShopResultMap">
+        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
+        FROM shop
+        WHERE owner_user_id = #{ownerUserId}
+          AND status = 1
+        ORDER BY created_at DESC
     </select>
 
 </mapper>

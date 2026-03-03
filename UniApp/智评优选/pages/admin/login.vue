@@ -2,8 +2,8 @@
   <view class="login-container">
     <view class="form">
       <view class="form-header">
-        <text class="title">登录</text>
-        <text class="subtitle">欢迎回来</text>
+        <text class="title">管理端登录</text>
+        <text class="subtitle">运营管理 / 商家管理</text>
       </view>
       
       <view class="form-item">
@@ -46,7 +46,7 @@
       </view>
       
       <view class="form-item">
-        <text class="link" @click="goToRegister">还没有账号？去注册</text>
+        <text class="link" @click="goToUserLogin">返回用户登录</text>
       </view>
     </view>
   </view>
@@ -56,6 +56,7 @@
 import { ref } from 'vue'
 import { login } from '@/api/auth'
 import { useAuthStore } from '@/store/auth'
+import { getMyInfo } from '@/api/users'
 
 const account = ref('')
 const password = ref('')
@@ -74,9 +75,7 @@ const validateAccount = () => {
     return false
   }
   
-  // 手机号正则：11位数字
   const phoneRegex = /^1[1-9]\d{9}$/
-  // 邮箱正则
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   
   if (!phoneRegex.test(value) && !emailRegex.test(value)) {
@@ -98,113 +97,109 @@ const validatePassword = () => {
     return false
   }
   
-  if (value.length < 6) {
-    passwordError.value = '密码至少6位'
-    return false
-  }
-  
   passwordError.value = ''
   return true
 }
 
-/**
- * 清除账号错误
- */
 const clearAccountError = () => {
-  if (accountError.value) {
-    accountError.value = ''
-  }
+  accountError.value = ''
 }
 
-/**
- * 清除密码错误
- */
 const clearPasswordError = () => {
-  if (passwordError.value) {
-    passwordError.value = ''
-  }
+  passwordError.value = ''
 }
 
 /**
  * 处理登录
  */
 const handleLogin = async () => {
-  // 验证表单
+  // 表单验证
   if (!validateAccount() || !validatePassword()) {
     return
   }
   
-  if (submitting.value) return
+  if (submitting.value) {
+    return
+  }
+  
+  submitting.value = true
   
   try {
-    submitting.value = true
-    const res = await login(account.value.trim(), password.value)
+    // 调用登录接口
+    const res = await login(account.value.trim(), password.value.trim())
     
-    if (res.token) {
+    if (res && res.token) {
+      // 保存 token
       authStore.setToken(res.token)
-      // 保存用户信息，如果没有返回 userInfo，则保存登录账号
-      const userInfo = res.userInfo || {}
-      // 如果 userInfo 中没有 mobile 和 email，且登录账号是手机号或邮箱，则保存
-      if (!userInfo.mobile && !userInfo.email) {
-        const accountValue = account.value.trim()
-        // 判断是手机号还是邮箱
-        if (/^1[1-9]\d{9}$/.test(accountValue)) {
-          userInfo.mobile = accountValue
-        } else if (accountValue.includes('@')) {
-          userInfo.email = accountValue
-        }
+      
+      // 获取用户信息
+      try {
+        const userInfo = await getMyInfo()
+        authStore.setUserInfo(userInfo)
+      } catch (err) {
+        console.error('获取用户信息失败:', err)
       }
-      authStore.setUserInfo(userInfo)
       
-      uni.showToast({ title: '登录成功', icon: 'success' })
+      // 检查角色权限
+      const roles = authStore.roles
+      if (!roles.includes('ADMIN') && !roles.includes('MERCHANT')) {
+        uni.showToast({
+          title: '该账号无管理权限',
+          icon: 'none',
+          duration: 2000
+        })
+        authStore.logout()
+        submitting.value = false
+        return
+      }
       
-      setTimeout(() => {
-        // 返回上一页或跳转到首页
-        const pages = getCurrentPages()
-        if (pages.length > 1) {
-          uni.navigateBack()
-        } else {
-          uni.switchTab({ url: '/pages/home/index' })
-        }
-      }, 1500)
+      // 跳转到管理端首页
+      uni.reLaunch({
+        url: '/pages/admin/index'
+      })
+    } else {
+      throw new Error('登录失败：未返回 token')
     }
   } catch (error) {
     console.error('登录失败:', error)
-    const errorMsg = error?.message || error?.data?.message || '登录失败，请检查账号密码'
-    uni.showToast({ title: errorMsg, icon: 'none', duration: 2000 })
+    const message = error?.data?.message || error?.message || '登录失败，请稍后重试'
+    uni.showToast({
+      title: message,
+      icon: 'none',
+      duration: 2000
+    })
   } finally {
     submitting.value = false
   }
 }
 
-const goToRegister = () => {
-  uni.navigateTo({ url: '/pages/user/register' })
+/**
+ * 返回用户登录页
+ */
+const goToUserLogin = () => {
+  uni.navigateTo({
+    url: '/pages/user/login'
+  })
 }
 </script>
 
 <style scoped>
 .login-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
-  background-image: url('/static/icons/loginBG.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  padding: 40rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  --auth-right-gap: 350rpx;
+  justify-content: center;
+  padding: 40rpx;
 }
 
 .form {
   width: 100%;
   max-width: 600rpx;
-  margin-right: var(--auth-right-gap, 350rpx);
-  background-color: #fff;
+  background: #fff;
+  border-radius: 20rpx;
   padding: 60rpx 40rpx;
-  border-radius: 24rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.1);
 }
 
 .form-header {
@@ -217,12 +212,12 @@ const goToRegister = () => {
   font-size: 48rpx;
   font-weight: bold;
   color: #333;
-  margin-bottom: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .subtitle {
   display: block;
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #999;
 }
 
@@ -245,26 +240,19 @@ const goToRegister = () => {
   border: 2rpx solid #e0e0e0;
   border-radius: 12rpx;
   font-size: 28rpx;
-  background-color: #fafafa;
-  transition: border-color 0.3s;
+  background: #f8f8f8;
   box-sizing: border-box;
-}
-
-.input:focus {
-  border-color: #3c9cff;
-  background-color: #fff;
 }
 
 .input.error {
   border-color: #ff4757;
-  background-color: #fff5f5;
 }
 
 .error-text {
   display: block;
-  font-size: 24rpx;
   color: #ff4757;
-  margin-top: 8rpx;
+  font-size: 24rpx;
+  margin-top: 12rpx;
 }
 
 .btn-primary {
@@ -272,30 +260,25 @@ const goToRegister = () => {
   height: 88rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  border-radius: 12rpx;
-  line-height: 88rpx;
-  text-align: center;
   border: none;
-  margin-top: 40rpx;
+  border-radius: 12rpx;
   font-size: 32rpx;
   font-weight: 500;
-  transition: opacity 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary.disabled {
   opacity: 0.6;
 }
 
-.btn-primary:active:not(.disabled) {
-  opacity: 0.8;
-}
-
 .link {
   display: block;
   text-align: center;
-  color: #3c9cff;
+  color: #667eea;
   font-size: 26rpx;
-  margin-top: 20rpx;
+  text-decoration: underline;
 }
 </style>
 

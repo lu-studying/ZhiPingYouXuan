@@ -167,5 +167,13 @@ public interface ShopMapper {
      */
     long countByDateRange(@Param("startDate") java.time.LocalDateTime startDate,
                          @Param("endDate") java.time.LocalDateTime endDate);
+
+    /**
+     * 根据归属商家用户ID查询店铺。
+     * 
+     * @param ownerUserId 归属商家用户ID
+     * @return 店铺列表，如果不存在则返回空列表
+     */
+    List<Shop> findByOwnerUserId(@Param("ownerUserId") Long ownerUserId);
 }
 

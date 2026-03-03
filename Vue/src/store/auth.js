@@ -10,6 +10,8 @@
  * 注意：如果后续改用 Pinia，可以相应调整代码结构
  */
 
+import { parseToken } from '@/utils/jwt'
+
 /**
  * 状态定义
  * 
@@ -141,7 +143,41 @@ const getters = {
    * @param {Object} state - Vuex state 对象
    * @returns {Object|null} 用户信息对象，如果未登录则返回 null
    */
-  userInfo: state => state.userInfo
+  userInfo: state => state.userInfo,
+
+  /**
+   * 从 JWT 中解析角色列表
+   * @param {Object} state
+   * @returns {Array<string>} 角色代码数组，如 ['ADMIN'] 或 ['MERCHANT','USER']
+   */
+  roles: state => {
+    if (!state.token) {
+      console.log('[Auth Store] 没有 token，返回空角色列表')
+      return []
+    }
+    try {
+      // 使用导入的 parseToken 函数解析 JWT token
+      const payload = parseToken(state.token)
+      console.log('[Auth Store] 解析的 JWT payload:', payload)
+      
+      if (!payload || !payload.roles) {
+        console.log('[Auth Store] payload 中没有 roles 字段')
+        return []
+      }
+      
+      const roles = Array.isArray(payload.roles) ? payload.roles : [payload.roles]
+      console.log('[Auth Store] 解析出的角色列表:', roles)
+      return roles
+    } catch (e) {
+      console.error('[Auth Store] 解析角色失败:', e)
+      return []
+    }
+  },
+
+  /** 是否为管理员 */
+  isAdmin: (state, getters) => getters.roles.includes('ADMIN'),
+  /** 是否为商家 */
+  isMerchant: (state, getters) => getters.roles.includes('MERCHANT')
 }
 
 /**

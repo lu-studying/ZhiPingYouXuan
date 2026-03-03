@@ -10,7 +10,7 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import store from '@/store'
-import { isTokenExpired } from '@/utils/jwt'
+import { isTokenExpired, parseToken } from '@/utils/jwt'
 
 /**
  * 路由配置数组
@@ -68,7 +68,8 @@ const routes = [
         component: () => import('@/views/shops/List.vue'),
         meta: {
           title: '商家管理',
-          requiresAuth: true
+          requiresAuth: true,
+          roles: ['ADMIN', 'MERCHANT'] // 管理员和商家都可以访问
         }
       },
       // 新增商家路由
@@ -78,7 +79,8 @@ const routes = [
         component: () => import('@/views/shops/Create.vue'),
         meta: {
           title: '新增商家',
-          requiresAuth: true
+          requiresAuth: true,
+          roles: ['ADMIN'] // 仅管理员可以新增商家
         }
       },
       // 商家详情路由
@@ -98,7 +100,8 @@ const routes = [
         component: () => import('@/views/shops/Edit.vue'),
         meta: {
           title: '编辑商家',
-          requiresAuth: true
+          requiresAuth: true,
+          roles: ['ADMIN', 'MERCHANT'] // 具体能否编辑由后端根据 ownerUserId 决定
         }
       },
       // 点评管理路由
@@ -128,7 +131,8 @@ const routes = [
         component: () => import('@/views/users/List.vue'),
         meta: {
           title: '用户管理',
-          requiresAuth: true
+          requiresAuth: true,
+          roles: ['ADMIN'] // 仅管理员
         }
       },
       // 用户详情路由
@@ -191,6 +195,15 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const isAuthenticated = !!token // 转换为布尔值
 
+  // 解析角色（如果有 token）
+  let roles = []
+  if (token && !isTokenExpired(token)) {
+    const payload = parseToken(token)
+    if (payload && payload.roles) {
+      roles = Array.isArray(payload.roles) ? payload.roles : [payload.roles]
+    }
+  }
+
   // 如果存在 token，检查是否过期
   if (token && isTokenExpired(token)) {
     // Token 已过期，清除本地存储
@@ -215,12 +228,22 @@ router.beforeEach((to, from, next) => {
       query: { redirect: to.fullPath } // 保存完整路径，如 /dashboard?page=1
     })
   } 
-  // 情况2：已登录用户访问登录页或注册页（避免重复登录）
+  // 情况2：路由配置了角色要求，且当前用户角色不满足
+  else if (to.meta.roles && to.meta.roles.length > 0) {
+    const allowed = to.meta.roles.some(r => roles.includes(r))
+    if (!allowed) {
+      // 没有权限，跳回仪表盘
+      next('/dashboard')
+      return
+    }
+    next()
+  }
+  // 情况3：已登录用户访问登录页或注册页（避免重复登录）
   else if ((to.path === '/login' || to.path === '/register') && isAuthenticated && !isTokenExpired(token)) {
     // 直接跳转到仪表盘（只有在 token 有效时才跳转）
     next('/dashboard')
   } 
-  // 情况3：其他情况，正常跳转
+  // 情况4：其他情况，正常跳转
   else {
     next() // 允许导航继续
   }

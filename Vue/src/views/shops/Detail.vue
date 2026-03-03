@@ -86,9 +86,154 @@
         </el-descriptions>
       </el-card>
 
+      <!-- 推荐菜管理卡片 -->
+      <el-card v-if="shop" class="menus-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <span>推荐菜管理</span>
+            <el-button type="primary" size="small" @click="handleAddMenu">
+              <el-icon><Plus /></el-icon>
+              新增推荐菜
+            </el-button>
+          </div>
+        </template>
+
+        <!-- 推荐菜列表 -->
+        <div v-loading="menusLoading" class="menus-list">
+          <el-empty v-if="!menusLoading && menus.length === 0" description="暂无推荐菜，点击上方按钮添加" />
+          <div v-else class="menus-grid">
+            <div v-for="menu in menus" :key="menu.id" class="menu-item">
+              <div class="menu-image-wrapper">
+                <img
+                  v-if="menu.image"
+                  :src="getImageUrl(menu.image)"
+                  class="menu-image"
+                  @error="handleImageError"
+                />
+                <div v-else class="menu-image-placeholder">
+                  <el-icon><Picture /></el-icon>
+                </div>
+                <el-tag v-if="menu.isRecommended" type="danger" class="recommended-badge">推荐</el-tag>
+              </div>
+              <div class="menu-info">
+                <div class="menu-name">{{ menu.name }}</div>
+                <div class="menu-desc">{{ menu.description || '暂无描述' }}</div>
+                <div class="menu-footer">
+                  <span class="menu-price">¥{{ menu.price?.toFixed(2) || '0.00' }}</span>
+                  <div class="menu-actions">
+                    <el-button type="primary" text size="small" @click="handleEditMenu(menu)">
+                      <el-icon><Edit /></el-icon>
+                      编辑
+                    </el-button>
+                    <el-button type="danger" text size="small" @click="handleDeleteMenu(menu)">
+                      <el-icon><Delete /></el-icon>
+                      删除
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-card>
+
       <!-- 错误提示 -->
       <el-empty v-else-if="!loading && !shop" description="商家不存在或已删除" />
     </el-card>
+
+    <!-- 新增/编辑推荐菜弹窗 -->
+    <el-dialog
+      v-model="menuDialogVisible"
+      :title="editingMenu ? '编辑推荐菜' : '新增推荐菜'"
+      width="600px"
+      @close="handleCloseMenuDialog"
+    >
+      <el-form
+        ref="menuFormRef"
+        :model="menuForm"
+        :rules="menuRules"
+        label-width="100px"
+      >
+        <el-form-item label="菜品名称" prop="name">
+          <el-input
+            v-model="menuForm.name"
+            placeholder="请输入菜品名称"
+            maxlength="50"
+            show-word-limit
+          />
+        </el-form-item>
+
+        <el-form-item label="菜品描述" prop="description">
+          <el-input
+            v-model="menuForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入菜品描述"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+
+        <el-form-item label="价格" prop="price">
+          <el-input-number
+            v-model="menuForm.price"
+            :min="0"
+            :precision="2"
+            :step="1"
+            placeholder="请输入价格"
+            style="width: 100%"
+          >
+            <template #prefix>¥</template>
+          </el-input-number>
+        </el-form-item>
+
+        <el-form-item label="菜品图片">
+          <div class="image-upload-wrapper">
+            <el-upload
+              :action="uploadAction"
+              :headers="uploadHeaders"
+              :data="uploadData"
+              :show-file-list="false"
+              :before-upload="beforeUpload"
+              :on-success="handleUploadSuccess"
+              :on-error="handleUploadError"
+            >
+              <img v-if="menuForm.image" :src="getImageUrl(menuForm.image)" class="uploaded-image" />
+              <el-button v-else type="primary">
+                <el-icon><Upload /></el-icon>
+                上传图片
+              </el-button>
+            </el-upload>
+            <div class="upload-tip">支持 JPG、PNG 格式，建议尺寸 400x400px</div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="是否推荐">
+          <el-switch
+            v-model="menuForm.isRecommended"
+            :active-value="1"
+            :inactive-value="0"
+          />
+        </el-form-item>
+
+        <el-form-item label="排序顺序">
+          <el-input-number
+            v-model="menuForm.sortOrder"
+            :min="0"
+            :step="1"
+            placeholder="数字越小越靠前"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="handleCloseMenuDialog">取消</el-button>
+        <el-button type="primary" :loading="menuSubmitting" @click="handleSubmitMenu">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -102,12 +247,13 @@
  * 3. 支持查看商家状态、评分等信息
  */
 
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Loading } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Loading, Plus, Edit, Delete, Picture, Upload } from '@element-plus/icons-vue'
 import { getShop } from '@/api/shops'
 import { getShopTags } from '@/api/tags'
+import { getMenusByShopId, createMenu, updateMenu, deleteMenu } from '@/api/menus'
 
 // 使用 Vue Router
 const router = useRouter()
@@ -122,6 +268,52 @@ const shop = ref(null)
 // 商家标签数据
 const shopTags = ref([])
 const shopTagsLoading = ref(false)
+
+// 推荐菜数据
+const menus = ref([])
+const menusLoading = ref(false)
+const menuDialogVisible = ref(false)
+const menuSubmitting = ref(false)
+const editingMenu = ref(null)
+const menuFormRef = ref(null)
+
+// 推荐菜表单数据
+const menuForm = ref({
+  name: '',
+  description: '',
+  price: null,
+  image: '',
+  isRecommended: 1,
+  sortOrder: 0
+})
+
+// 推荐菜表单验证规则
+const menuRules = {
+  name: [
+    { required: true, message: '请输入菜品名称', trigger: 'blur' },
+    { max: 50, message: '菜品名称不能超过50个字符', trigger: 'blur' }
+  ],
+  price: [
+    { required: true, message: '请输入价格', trigger: 'blur' },
+    { type: 'number', min: 0, message: '价格不能为负数', trigger: 'blur' }
+  ]
+}
+
+// 图片上传配置
+const uploadAction = computed(() => {
+  return '/api/files/upload'
+})
+
+const uploadHeaders = computed(() => {
+  const token = localStorage.getItem('token')
+  return {
+    Authorization: token ? `Bearer ${token}` : ''
+  }
+})
+
+const uploadData = computed(() => ({
+  pathPrefix: 'menu/'
+}))
 
 /**
  * 加载商家详情
@@ -149,6 +341,8 @@ const loadShop = async () => {
     shop.value = response
     // 加载商家标签
     loadShopTags(shopId)
+    // 加载推荐菜列表
+    loadMenus(shopId)
   } catch (error) {
     console.error('加载商家详情失败:', error)
     // 如果商家不存在（404），显示错误提示
@@ -199,6 +393,223 @@ const loadShopTags = async (shopId) => {
     shopTags.value = []
   } finally {
     shopTagsLoading.value = false
+  }
+}
+
+/**
+ * 加载推荐菜列表
+ * 
+ * @param {number} shopId - 商家ID
+ */
+const loadMenus = async (shopId) => {
+  menusLoading.value = true
+  try {
+    const menusList = await getMenusByShopId(shopId)
+    menus.value = Array.isArray(menusList) ? menusList : []
+    // 按排序顺序排序
+    menus.value.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+  } catch (error) {
+    console.error('加载推荐菜列表失败:', error)
+    ElMessage.error('加载推荐菜列表失败')
+    menus.value = []
+  } finally {
+    menusLoading.value = false
+  }
+}
+
+/**
+ * 获取图片完整URL
+ */
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return ''
+  
+  // 如果已经是完整 URL，直接返回
+  if (imagePath.startsWith('http')) {
+    return imagePath
+  }
+  
+
+  
+  // 其他相对路径，如果是 / 开头，直接返回（可能是其他静态资源）
+  if (imagePath.startsWith('/')) {
+    return imagePath
+  }
+  
+  // 如果是不带 / 的相对路径，添加 /uploads/ 前缀（兼容旧数据）
+  return `/uploads/${imagePath}`
+}
+
+/**
+ * 处理图片加载错误
+ */
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+}
+
+/**
+ * 打开新增推荐菜弹窗
+ */
+const handleAddMenu = () => {
+  editingMenu.value = null
+  menuForm.value = {
+    name: '',
+    description: '',
+    price: null,
+    image: '',
+    isRecommended: 1,
+    sortOrder: 0
+  }
+  menuDialogVisible.value = true
+}
+
+/**
+ * 打开编辑推荐菜弹窗
+ */
+const handleEditMenu = (menu) => {
+  editingMenu.value = menu
+  menuForm.value = {
+    name: menu.name || '',
+    description: menu.description || '',
+    price: menu.price || null,
+    image: menu.image || '',
+    isRecommended: menu.isRecommended || 0,
+    sortOrder: menu.sortOrder || 0
+  }
+  menuDialogVisible.value = true
+}
+
+/**
+ * 关闭推荐菜弹窗
+ */
+const handleCloseMenuDialog = () => {
+  menuDialogVisible.value = false
+  editingMenu.value = null
+  menuFormRef.value?.resetFields()
+}
+
+/**
+ * 上传前验证
+ */
+const beforeUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!')
+    return false
+  }
+  return true
+}
+
+/**
+ * 上传成功回调
+ */
+const handleUploadSuccess = (response) => {
+  console.log('[Upload] 上传成功响应:', response)
+  
+  if (response && response.url) {
+    // 后端返回的是相对路径，如 /uploads/menu/2024/01/15/xxx.jpg
+    menuForm.value.image = response.url
+    console.log('[Upload] 保存的图片路径:', menuForm.value.image)
+    ElMessage.success('图片上传成功')
+  } else if (response && response.relativeUrl) {
+    menuForm.value.image = response.relativeUrl
+    console.log('[Upload] 保存的图片路径（relativeUrl）:', menuForm.value.image)
+    ElMessage.success('图片上传成功')
+  } else {
+    console.error('[Upload] 响应格式错误:', response)
+    ElMessage.error('上传成功但未返回图片路径')
+  }
+}
+
+/**
+ * 上传失败回调
+ */
+const handleUploadError = () => {
+  ElMessage.error('图片上传失败')
+}
+
+/**
+ * 提交推荐菜表单
+ */
+const handleSubmitMenu = async () => {
+  if (!menuFormRef.value) return
+
+  await menuFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    if (!shop.value) {
+      ElMessage.error('商家信息不存在')
+      return
+    }
+
+    menuSubmitting.value = true
+
+    try {
+      const menuData = {
+        shopId: shop.value.id,
+        name: menuForm.value.name.trim(),
+        description: menuForm.value.description?.trim() || '',
+        price: menuForm.value.price,
+        image: menuForm.value.image || '',
+        isRecommended: menuForm.value.isRecommended,
+        sortOrder: menuForm.value.sortOrder || 0
+      }
+
+      if (editingMenu.value) {
+        // 更新
+        await updateMenu(editingMenu.value.id, menuData)
+        ElMessage.success('推荐菜更新成功')
+      } else {
+        // 新增
+        await createMenu(menuData)
+        ElMessage.success('推荐菜添加成功')
+      }
+
+      handleCloseMenuDialog()
+      // 重新加载推荐菜列表
+      loadMenus(shop.value.id)
+    } catch (error) {
+      console.error('保存推荐菜失败:', error)
+      const errorMessage = error?.response?.data?.message || error?.message || '保存失败'
+      ElMessage.error(errorMessage)
+    } finally {
+      menuSubmitting.value = false
+    }
+  })
+}
+
+/**
+ * 删除推荐菜
+ */
+const handleDeleteMenu = async (menu) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除推荐菜"${menu.name}"吗？`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    await deleteMenu(menu.id)
+    ElMessage.success('删除成功')
+    
+    // 重新加载推荐菜列表
+    if (shop.value) {
+      loadMenus(shop.value.id)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除推荐菜失败:', error)
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -320,6 +731,127 @@ onMounted(() => {
 .tags-loading {
   display: inline-flex;
   align-items: center;
+}
+
+/* 推荐菜管理卡片 */
+.menus-card {
+  margin-top: 20px;
+}
+
+.menus-list {
+  min-height: 100px;
+}
+
+.menus-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.menu-item {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s;
+  background: #fff;
+}
+
+.menu-item:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.menu-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: #f5f7fa;
+  overflow: hidden;
+}
+
+.menu-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c0c4cc;
+  font-size: 48px;
+}
+
+.recommended-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.menu-info {
+  padding: 16px;
+}
+
+.menu-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-desc {
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 36px;
+}
+
+.menu-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-price {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f56c6c;
+}
+
+.menu-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 图片上传 */
+.image-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uploaded-image {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 响应式调整 */

@@ -9,6 +9,7 @@ import com.demo.dp.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -100,13 +101,21 @@ public class UserController {
      * @param keyword 搜索关键词（在手机号和邮箱中搜索），可选
      * @return 用户列表（分页结果），HTTP 200 状态码
      */
+    /**
+     * 分页查询用户列表（仅 ADMIN 可访问）。
+     * 
+     * <p>使用 Spring Security 的 {@code @PreAuthorize} 注解进行权限控制，
+     * 只有拥有 ROLE_ADMIN 角色的用户才能访问此接口。
+     */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> listUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String keyword) {
-        
-        log.info("查询用户列表: page={}, size={}, keyword={}", page, size, keyword);
+            @RequestParam(required = false) String keyword,
+            Authentication authentication) {
+
+        log.info("查询用户列表: operator={}, page={}, size={}, keyword={}", authentication.getName(), page, size, keyword);
 
         // 调用服务层查询用户列表
         List<User> users = userService.listUsers(page, size, keyword);

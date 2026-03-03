@@ -9,21 +9,21 @@
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
           <div>
-            <h1 class="page-title">商家管理</h1>
-            <p class="page-subtitle">管理所有商家信息</p>
+            <h1 class="page-title">{{ isMerchant ? '我的店铺' : '商家管理' }}</h1>
+            <p class="page-subtitle">{{ isMerchant ? '管理我的店铺信息' : '管理所有商家信息' }}</p>
           </div>
         </div>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleCreate">
+        <el-button v-if="isAdmin" type="primary" @click="handleCreate">
           <el-icon><Plus /></el-icon>
           新增商家
         </el-button>
       </div>
     </div>
 
-    <!-- 搜索和筛选区域 -->
-    <el-card class="search-card" shadow="never">
+    <!-- 搜索和筛选区域（仅管理员显示） -->
+    <el-card v-if="isAdmin" class="search-card" shadow="never">
       <el-form :model="searchForm" :inline="true" class="search-form">
         <!-- 关键词搜索 -->
         <el-form-item label="关键词">
@@ -180,7 +180,7 @@
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
-              <el-button type="danger" text size="small" @click="handleDelete(row)" title="删除商家">
+              <el-button v-if="isAdmin" type="danger" text size="small" @click="handleDelete(row)" title="删除商家">
                 <el-icon><Delete /></el-icon>
                 删除
               </el-button>
@@ -189,8 +189,8 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页组件 -->
-      <div class="pagination-wrapper">
+      <!-- 分页组件（仅管理员显示） -->
+      <div v-if="isAdmin" class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.size"
@@ -218,20 +218,39 @@
  * 6. 新增商家按钮
  */
 
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useStore } from 'vuex'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { listShops, deleteShop } from '@/api/shops'
+import { listShops, getMyShops, deleteShop } from '@/api/shops'
 
-// 使用 Vue Router
+// 使用 Vue Router 和 Vuex Store
 const router = useRouter()
 const route = useRoute()
+const store = useStore()
 
 // 加载状态
 const loading = ref(false)
 
 // 商家列表数据
 const shops = ref([])
+
+// 获取用户角色信息
+const isAdmin = computed(() => {
+  const admin = store.getters['auth/isAdmin']
+  console.log('[Shops List] isAdmin:', admin)
+  return admin
+})
+const isMerchant = computed(() => {
+  const merchant = store.getters['auth/isMerchant']
+  console.log('[Shops List] isMerchant:', merchant)
+  return merchant
+})
+const roles = computed(() => {
+  const rolesList = store.getters['auth/roles']
+  console.log('[Shops List] roles:', rolesList)
+  return rolesList
+})
 
 // 搜索表单
 const searchForm = reactive({
@@ -253,39 +272,63 @@ const pagination = reactive({
  * 加载商家列表
  * 
  * 功能：
- * 1. 根据搜索条件和分页信息加载商家列表
- * 2. 更新分页信息
+ * 1. 根据角色调用不同的 API：
+ *    - ADMIN: 调用 listShops（支持分页、搜索、筛选）
+ *    - MERCHANT: 调用 getMyShops（只返回自己的店铺，不支持分页）
+ * 2. 更新商家列表和分页信息
  */
 const loadShops = async () => {
   loading.value = true
 
   try {
-    // 构建查询参数
-    const params = {
-      page: pagination.page - 1, // API 页码从0开始，前端从1开始
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      category: searchForm.category || undefined,
-      minScore: searchForm.minScore || undefined,
-      maxPrice: searchForm.maxPrice || undefined
-    }
+    // 调试信息
+    console.log('[Shops List] 开始加载商家列表')
+    console.log('[Shops List] isAdmin.value:', isAdmin.value)
+    console.log('[Shops List] isMerchant.value:', isMerchant.value)
+    console.log('[Shops List] roles.value:', roles.value)
+    
+    if (isMerchant.value && !isAdmin.value) {
+      // 商家账号（且不是管理员）：只加载自己的店铺
+      console.log('[Shops List] 使用商家账号模式，调用 getMyShops')
+      const myShops = await getMyShops()
+      console.log('[Shops List] getMyShops 返回结果:', myShops)
+      shops.value = Array.isArray(myShops) ? myShops : []
+      
+      // 商家账号不支持分页，设置总数为实际数量
+      pagination.total = shops.value.length
+      
+      // 如果有状态筛选，在前端过滤
+      if (searchForm.status !== '') {
+        shops.value = shops.value.filter(shop => shop.status === searchForm.status)
+      }
+    } else {
+      // 管理员账号：加载所有商家（支持分页、搜索、筛选）
+      const params = {
+        page: pagination.page - 1, // API 页码从0开始，前端从1开始
+        size: pagination.size,
+        keyword: searchForm.keyword || undefined,
+        category: searchForm.category || undefined,
+        minScore: searchForm.minScore || undefined,
+        maxPrice: searchForm.maxPrice || undefined
+      }
 
-    // 调用 API 获取商家列表
-    const response = await listShops(params)
+      const response = await listShops(params)
 
-    // 更新商家列表
-    shops.value = response.content || []
+      // 更新商家列表
+      shops.value = response.content || []
 
-    // 更新分页信息
-    pagination.total = response.total || 0
+      // 更新分页信息
+      pagination.total = response.total || 0
 
-    // 如果有状态筛选，在前端过滤（因为后端API不支持status筛选）
-    if (searchForm.status !== '') {
-      shops.value = shops.value.filter(shop => shop.status === searchForm.status)
+      // 如果有状态筛选，在前端过滤（因为后端API不支持status筛选）
+      if (searchForm.status !== '') {
+        shops.value = shops.value.filter(shop => shop.status === searchForm.status)
+      }
     }
   } catch (error) {
     console.error('加载商家列表失败:', error)
-    ElMessage.error('加载商家列表失败')
+    const errorMessage = error?.response?.data?.message || error?.message || '加载商家列表失败'
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
   }
@@ -450,7 +493,15 @@ const formatDateTime = (dateTime) => {
 
 // 组件挂载时加载商家列表
 onMounted(() => {
-  loadShops()
+  // 延迟一下，确保 store 中的角色信息已经解析完成
+  setTimeout(() => {
+    console.log('[Shops List] onMounted - 开始加载商家列表')
+    console.log('[Shops List] onMounted - token:', store.getters['auth/token'])
+    console.log('[Shops List] onMounted - roles:', store.getters['auth/roles'])
+    console.log('[Shops List] onMounted - isAdmin:', store.getters['auth/isAdmin'])
+    console.log('[Shops List] onMounted - isMerchant:', store.getters['auth/isMerchant'])
+    loadShops()
+  }, 100)
   
   // 如果从创建页面跳转过来，显示成功提示
   if (route.query.created === 'success') {

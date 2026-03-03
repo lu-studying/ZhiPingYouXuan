@@ -9,12 +9,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -43,11 +46,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtUtil.parse(token);
                 String sub = claims.getSubject();
                 if (sub != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // 将 userId 放入 principal，角色使用简单占位 ROLE_USER
+                    // 将 userId 放入 principal，并根据 token 中的 roles 构建权限列表
+                    Collection<GrantedAuthority> authorities = new ArrayList<>();
+                    Object rolesObj = claims.get("roles");
+                    if (rolesObj instanceof List<?> list) {
+                        for (Object roleCodeObj : list) {
+                            if (roleCodeObj != null) {
+                                String roleCode = roleCodeObj.toString();
+                                // Spring Security 约定：角色前缀为 ROLE_
+                                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleCode));
+                            }
+                        }
+                    }
+                    // 兜底：如果没有任何角色，给一个普通用户角色，避免空权限列表
+                    if (authorities.isEmpty()) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                    }
+
                     Authentication authentication = new UsernamePasswordAuthenticationToken(
                             sub,
                             null,
-                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                            authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

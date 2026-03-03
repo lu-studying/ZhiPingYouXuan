@@ -24,7 +24,10 @@
               <el-icon><Odometer /></el-icon>
               <span>仪表盘</span>
             </el-menu-item>
-            <el-menu-item index="/shops">
+            <el-menu-item
+              v-if="isAdmin || isMerchant"
+              index="/shops"
+            >
               <el-icon><Shop /></el-icon>
               <span>商家管理</span>
             </el-menu-item>
@@ -36,7 +39,10 @@
               <el-icon><Document /></el-icon>
               <span>订单管理</span>
             </el-menu-item>
-            <el-menu-item index="/users">
+            <el-menu-item
+              v-if="isAdmin"
+              index="/users"
+            >
               <el-icon><User /></el-icon>
               <span>用户管理</span>
             </el-menu-item>
@@ -104,7 +110,7 @@ import {
   SwitchButton
 } from '@element-plus/icons-vue'
 import { logout } from '@/api/auth'
-import { isTokenExpired } from '@/utils/jwt'
+import { isTokenExpired, parseToken } from '@/utils/jwt'
 
 const router = useRouter()
 const route = useRoute()
@@ -112,6 +118,18 @@ const store = useStore()
 
 // 获取用户信息
 const userInfo = computed(() => store.getters['auth/userInfo'])
+
+// 解析当前登录用户角色
+const roles = computed(() => {
+  const token = store.getters['auth/token']
+  if (!token || isTokenExpired(token)) return []
+  const payload = parseToken(token)
+  if (!payload || !payload.roles) return []
+  return Array.isArray(payload.roles) ? payload.roles : [payload.roles]
+})
+
+const isAdmin = computed(() => roles.value.includes('ADMIN'))
+const isMerchant = computed(() => roles.value.includes('MERCHANT'))
 
 // 计算用户显示名称
 const userDisplayName = computed(() => {

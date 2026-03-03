@@ -8,11 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 商家管理控制器：提供商家相关的REST API接口。
@@ -284,7 +287,9 @@ public class ShopController {
      * @return ResponseEntity包含更新后的商家对象，HTTP状态码200表示成功
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateShop(@PathVariable Long id, @RequestBody ShopUpdateRequest req) {
+    public ResponseEntity<?> updateShop(@PathVariable Long id,
+                                        @RequestBody ShopUpdateRequest req,
+                                        Authentication authentication) {
         try {
             // 确保使用URL路径中的ID，而不是请求体中的ID（防止ID不一致）
             req.setId(id); // 确保使用路径中的ID
@@ -293,6 +298,27 @@ public class ShopController {
             Shop existing = shopService.getById(id);
             if (existing == null) {
                 return error(404, "商家不存在");
+            }
+
+            // 权限控制：
+            // - ADMIN 可以编辑任意商家
+            // - MERCHANT 只能编辑自己拥有的店铺（ownerUserId 等于当前用户ID）
+            if (authentication != null) {
+                Long currentUserId = Long.parseLong(authentication.getName());
+                List<String> roles = authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList());
+                boolean isAdmin = roles.contains("ROLE_ADMIN");
+                boolean isMerchant = roles.contains("ROLE_MERCHANT");
+
+                if (isMerchant && !isAdmin) {
+                    // 商家账号：只允许编辑自己拥有的店铺
+                    if (existing.getOwnerUserId() == null || !existing.getOwnerUserId().equals(currentUserId)) {
+                        log.warn("商家尝试修改他人店铺，userId={}, shopId={}, ownerUserId={}",
+                                currentUserId, id, existing.getOwnerUserId());
+                        return error(403, "无权修改其他商家的店铺信息");
+                    }
+                }
             }
 
             // 创建Shop实体对象，用于部分更新
@@ -409,6 +435,25 @@ public class ShopController {
             log.error("删除商家失败, shopId={}", id, e);
             return error(500, "删除商家失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 获取当前商家拥有的店铺列表。
+     * 
+     * <p>路径：GET /api/shops/my
+     * <p>认证：需要用户登录（JWT），且角色为 MERCHANT 或 ADMIN
+     * <p>功能：查询当前登录商家用户拥有的所有店铺
+     * 
+     * @param authentication 认证信息，用于获取当前用户ID
+     * @return 店铺列表，HTTP 200 状态码
+     */
+    @GetMapping("/my")
+    public ResponseEntity<List<Shop>> getMyShops(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        log.info("查询当前商家店铺列表: userId={}", userId);
+        
+        List<Shop> shops = shopService.findByOwnerUserId(userId);
+        return ResponseEntity.ok(shops);
     }
 
     /**
