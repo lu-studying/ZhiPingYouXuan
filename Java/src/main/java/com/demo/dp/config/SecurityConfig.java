@@ -121,6 +121,7 @@ public class SecurityConfig {
                 // 管理端接口：仅 ADMIN 角色可访问
                 .requestMatchers("/api/users").hasRole("ADMIN")  // 用户列表查询
                 .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/users/*").hasRole("ADMIN")
 
                 // 商家管理接口：
                 // - 创建/删除商家：仅 ADMIN
@@ -135,6 +136,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/menus").hasAnyRole("MERCHANT", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/menus/*").hasAnyRole("MERCHANT", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/menus/*").hasAnyRole("MERCHANT", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/shops/*/reviews/*").hasAnyRole("MERCHANT", "ADMIN")
 
                 // 仪表盘、用户管理、AI日志查询需要认证（管理端功能）
                 // 注意：这些接口需要登录后才能访问，用于管理端数据展示

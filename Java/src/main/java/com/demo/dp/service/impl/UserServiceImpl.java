@@ -2,6 +2,7 @@ package com.demo.dp.service;
 
 import com.demo.dp.domain.entity.User;
 import com.demo.dp.mapper.UserMapper;
+import com.demo.dp.mapper.UserTagMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +19,12 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final UserTagMapper userTagMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserMapper userMapper, UserTagMapper userTagMapper, PasswordEncoder passwordEncoder) {
         this.userMapper = userMapper;
+        this.userTagMapper = userTagMapper;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -135,6 +138,22 @@ public class UserServiceImpl implements UserService {
         userMapper.update(existing);
         
         return existing;
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        Optional<User> userOpt = findById(id);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        if (userTagMapper != null) {
+            userTagMapper.deleteByUserId(id);
+        }
+        userMapper.delete(id);
     }
 }
 

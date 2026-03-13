@@ -146,5 +146,23 @@ public class ReviewServiceImpl implements ReviewService {
     public long countByUserId(Long userId) {
         return reviewMapper.countByUserId(userId);
     }
+
+    @Override
+    public Review getById(Long id) {
+        return reviewMapper.findById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Long id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("点评ID不能为空");
+        }
+        Review existing = reviewMapper.findById(id);
+        if (existing == null) {
+            throw new RuntimeException("点评不存在");
+        }
+        reviewMapper.delete(id);
+    }
 }
 

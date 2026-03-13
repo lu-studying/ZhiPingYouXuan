@@ -113,3 +113,10 @@ export function recommendReviews(shopId, params = {}) {
   })
 }
 
+export function deleteReview(shopId, reviewId) {
+  return request({
+    url: `/shops/${shopId}/reviews/${reviewId}`,
+    method: 'delete'
+  })
+}
+

@@ -100,5 +100,7 @@ public interface ReviewMapper {
      * @return 点评总数
      */
     long countByUserId(@Param("userId") Long userId);
+
+    int delete(@Param("id") Long id);
 }
 

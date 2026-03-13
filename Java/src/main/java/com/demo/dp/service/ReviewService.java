@@ -73,4 +73,8 @@ public interface ReviewService {
      * @return 点评总数
      */
     long countByUserId(Long userId);
+
+    Review getById(Long id);
+
+    void deleteReview(Long id);
 }

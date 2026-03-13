@@ -119,5 +119,12 @@
         WHERE user_id = #{userId} AND status = 1
     </select>
 
+    <!-- 软删除点评：status=0 -->
+    <update id="delete">
+        UPDATE review
+        SET status = 0
+        WHERE id = #{id}
+    </update>
+
 </mapper>
 

@@ -251,12 +251,24 @@
             {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button type="primary" text size="small" @click="handleViewDetail(row)" title="查看详情">
                 <el-icon><View /></el-icon>
                 详情
+              </el-button>
+              <el-button
+                v-if="(isAdmin || isMerchant) && row.shopId"
+                type="danger"
+                text
+                size="small"
+                :loading="deletingId === row.id"
+                @click="handleDelete(row)"
+                title="删除点评"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
               </el-button>
               <el-button
                 v-if="row.shopId"
@@ -371,9 +383,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useStore } from 'vuex'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft,
   Refresh,
@@ -382,13 +395,17 @@ import {
   View,
   Shop,
   MagicStick,
-  InfoFilled
+  InfoFilled,
+  Delete
 } from '@element-plus/icons-vue'
-import { listReviews, recommendReviews } from '@/api/reviews'
+import { listReviews, recommendReviews, deleteReview } from '@/api/reviews'
 import { listShops } from '@/api/shops'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const store = useStore()
+const isAdmin = computed(() => store.getters['auth/isAdmin'])
+const isMerchant = computed(() => store.getters['auth/isMerchant'])
 
 // 响应式数据
 const loading = ref(false)
@@ -396,6 +413,7 @@ const reviewList = ref([])
 const shopList = ref([])
 const detailDialogVisible = ref(false)
 const selectedReview = ref(null)
+const deletingId = ref(null)
 const currentShopId = ref(null) // 记录当前加载的商家ID
 
 // AI 推荐相关数据
@@ -597,6 +615,27 @@ const handlePageChange = (page) => {
 const handleViewDetail = (review) => {
   selectedReview.value = review
   detailDialogVisible.value = true
+}
+
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('删除后不可恢复，确认删除该点评？', '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    deletingId.value = row.id
+    await deleteReview(row.shopId, row.id)
+    ElMessage.success('删除成功')
+    allReviewsData.value = allReviewsData.value.filter(r => r.id !== row.id)
+    applyFiltersAndPagination()
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') {
+      ElMessage.error(e?.response?.data?.message || '删除失败')
+    }
+  } finally {
+    deletingId.value = null
+  }
 }
 
 /**

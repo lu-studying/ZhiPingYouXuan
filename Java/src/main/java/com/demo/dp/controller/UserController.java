@@ -169,6 +169,20 @@ public class UserController {
         return ResponseEntity.ok(userOpt.get());
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, Authentication authentication) {
+        try {
+            userService.deleteUser(id);
+            log.info("删除用户成功: userId={}, operator={}", id, authentication != null ? authentication.getName() : "unknown");
+            return ResponseEntity.ok(java.util.Map.of("message", "删除成功"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(java.util.Map.of("code", 404, "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(java.util.Map.of("code", 500, "message", "删除用户失败: " + e.getMessage()));
+        }
+    }
+
     /**
      * 根据用户ID查询用户详情。
      * 

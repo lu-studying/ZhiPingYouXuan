@@ -73,4 +73,6 @@ public interface UserService {
      * @throws IllegalArgumentException 当用户不存在时抛出
      */
     User updateUser(User user);
+
+    void deleteUser(Long id);
 }

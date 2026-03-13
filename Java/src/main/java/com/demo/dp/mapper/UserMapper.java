@@ -66,5 +66,7 @@ public interface UserMapper {
      * @return 用户对象，如果不存在则返回 null
      */
     User findByNickname(@Param("nickname") String nickname, @Param("excludeUserId") Long excludeUserId);
+
+    int delete(@Param("id") Long id);
 }
 

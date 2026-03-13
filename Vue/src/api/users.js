@@ -69,3 +69,10 @@ export function getUserReviews(id, params = {}) {
   })
 }
 
+export function deleteUser(id) {
+  return request({
+    url: `/users/${id}`,
+    method: 'delete'
+  })
+}
+

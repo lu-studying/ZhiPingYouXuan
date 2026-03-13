@@ -1,10 +1,12 @@
 package com.demo.dp.controller;
 
 import com.demo.dp.domain.entity.Review;
+import com.demo.dp.domain.entity.Shop;
 import com.demo.dp.dto.AiDraftRequest;
 import com.demo.dp.dto.AiDraftResponse;
 import com.demo.dp.dto.AiRecommendItemResponse;
 import com.demo.dp.dto.ReviewCreateRequest;
+import com.demo.dp.mapper.ShopMapper;
 import com.demo.dp.service.AiReviewService;
 import com.demo.dp.service.ReviewService;
 import org.springframework.http.ResponseEntity;
@@ -25,16 +27,32 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final AiReviewService aiReviewService;
+    private final ShopMapper shopMapper;
 
-    /**
-     * 构造函数：注入点评服务和 AI 点评服务。
-     *
-     * @param reviewService   点评业务服务
-     * @param aiReviewService AI 点评业务服务
-     */
-    public ReviewController(ReviewService reviewService, AiReviewService aiReviewService) {
+    public ReviewController(ReviewService reviewService, AiReviewService aiReviewService, ShopMapper shopMapper) {
         this.reviewService = reviewService;
         this.aiReviewService = aiReviewService;
+        this.shopMapper = shopMapper;
+    }
+
+    private boolean hasPermissionForShop(Long shopId, Authentication authentication) {
+        if (shopId == null || authentication == null) {
+            return false;
+        }
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        if (isAdmin) {
+            return true;
+        }
+        boolean isMerchant = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_MERCHANT".equals(a.getAuthority()));
+        if (!isMerchant) {
+            return false;
+        }
+        Shop shop = shopMapper.findById(shopId);
+        if (shop == null) {
+            return false;
+        }
+        Long currentUserId = Long.parseLong(authentication.getName());
+        return shop.getOwnerUserId() != null && shop.getOwnerUserId().equals(currentUserId);
     }
 
     @GetMapping
@@ -112,6 +130,21 @@ public class ReviewController {
         int safeLimit = limit == null ? 3 : limit;
         List<AiRecommendItemResponse> result = aiReviewService.recommendReviews(userId, shopId, preference, safeLimit);
         return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<?> delete(@PathVariable Long shopId,
+                                    @PathVariable Long reviewId,
+                                    Authentication authentication) {
+        if (!hasPermissionForShop(shopId, authentication)) {
+            return ResponseEntity.status(403).body(Map.of("code", 403, "message", "无权限操作该店铺点评"));
+        }
+        Review review = reviewService.getById(reviewId);
+        if (review == null || review.getShopId() == null || !review.getShopId().equals(shopId)) {
+            return ResponseEntity.status(404).body(Map.of("code", 404, "message", "点评不存在"));
+        }
+        reviewService.deleteReview(reviewId);
+        return ResponseEntity.ok(Map.of("message", "删除成功"));
     }
 }
 

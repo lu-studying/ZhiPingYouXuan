@@ -91,12 +91,23 @@
             {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button type="primary" text size="small" @click="handleViewDetail(row)" title="查看详情">
                 <el-icon><View /></el-icon>
                 详情
+              </el-button>
+              <el-button
+                type="danger"
+                text
+                size="small"
+                :loading="deletingId === row.id"
+                @click="handleDelete(row)"
+                title="删除用户"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
               </el-button>
             </div>
           </template>
@@ -123,15 +134,16 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft,
   Refresh,
   Search,
   RefreshLeft,
-  View
+  View,
+  Delete
 } from '@element-plus/icons-vue'
-import { listUsers } from '@/api/users'
+import { listUsers, deleteUser } from '@/api/users'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -139,6 +151,7 @@ const router = useRouter()
 // 响应式数据
 const loading = ref(false)
 const userList = ref([])
+const deletingId = ref(null)
 
 // 搜索表单
 const searchForm = reactive({
@@ -231,6 +244,27 @@ const handlePageChange = (page) => {
  */
 const handleViewDetail = (user) => {
   router.push(`/users/${user.id}`)
+}
+
+const handleDelete = async (user) => {
+  try {
+    await ElMessageBox.confirm('删除后不可恢复，确认删除该用户？', '确认删除', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消'
+    })
+    deletingId.value = user.id
+    await deleteUser(user.id)
+    ElMessage.success('删除成功')
+    // 重新加载当前页
+    loadUsers()
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') {
+      ElMessage.error(e?.response?.data?.message || '删除失败')
+    }
+  } finally {
+    deletingId.value = null
+  }
 }
 
 /**

@@ -1,4 +1,4 @@
-package com.demo.dp.service;
+package com.demo.dp.service.impl;
 
 import com.demo.dp.ai.AiClient;
 import com.demo.dp.ai.PromptBuilder;
@@ -9,6 +9,7 @@ import com.demo.dp.mapper.AiCallLogMapper;
 import com.demo.dp.mapper.OrderRecordMapper;
 import com.demo.dp.mapper.ReviewKeywordMapper;
 import com.demo.dp.mapper.ReviewMapper;
+import com.demo.dp.service.AiReviewService;
 import com.demo.dp.service.TagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
