@@ -85,13 +85,20 @@ CREATE TABLE `order_record`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `shop_id` bigint NOT NULL COMMENT '商家ID',
   `user_id` bigint NOT NULL COMMENT '用户ID',
+  `order_no` varchar(50) NULL DEFAULT NULL COMMENT '订单号',
   `amount` decimal(10, 2) NULL DEFAULT NULL COMMENT '消费金额，保留两位小数',
+  `pay_status` tinyint NULL DEFAULT 0 COMMENT '支付状态：0待支付，1已支付，2已取消',
+  `pay_method` varchar(30) NULL DEFAULT NULL COMMENT '支付方式（模拟）',
+  `pay_txn_no` varchar(80) NULL DEFAULT NULL COMMENT '模拟交易号',
+  `paid_at` datetime NULL DEFAULT NULL COMMENT '支付时间',
   `visit_time` datetime NULL DEFAULT NULL COMMENT '到店时间',
   `items` json NULL COMMENT '消费项明细JSON',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_order_shop`(`shop_id` ASC) USING BTREE,
   INDEX `idx_order_user`(`user_id` ASC) USING BTREE,
+  INDEX `idx_order_pay_status`(`pay_status` ASC) USING BTREE,
   CONSTRAINT `fk_order_shop` FOREIGN KEY (`shop_id`) REFERENCES `shop` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `fk_order_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '消费记录' ROW_FORMAT = Dynamic;
@@ -258,6 +265,7 @@ CREATE TABLE `user`  (
   `nickname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '昵称',
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '头像URL',
   `status` int NULL DEFAULT 1 COMMENT '状态：1正常，0禁用',
+  `balance` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '账户余额',
   `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
@@ -268,11 +276,31 @@ CREATE TABLE `user`  (
 -- ----------------------------
 -- Records of user
 -- ----------------------------
-INSERT INTO `user` VALUES (3, NULL, 'test@example.com', '$2a$10$e2kTr31d9I2M8UFdo8Q5Wuf007ufzX.LnUO9Met8KvvS3f6TTixm6', '威震天', NULL, 1, NULL, '2026-01-17 22:58:21');
-INSERT INTO `user` VALUES (4, '123456', NULL, '$2a$10$7qRXdjwXJbhWyIGhp/XzlOvuNy4rIkZazCZFlbptyPJVb2l3iij.i', NULL, NULL, 1, NULL, NULL);
-INSERT INTO `user` VALUES (5, '1234567', NULL, '$2a$10$nm.4qBvnKnI69qa.f9dJrO/Apaf8stLYkwGYx1nktDSLlZ.j5Lm52', NULL, NULL, 1, '2025-12-13 22:09:49', '2025-12-13 22:09:49');
-INSERT INTO `user` VALUES (6, '12345678', NULL, '$2a$10$epklKD2qV/jvKlCNp0x.EOWin0wuhKfNG9wABlQSgicI6smWYgzlC', NULL, NULL, 1, '2025-12-13 23:53:01', '2025-12-13 23:53:01');
-INSERT INTO `user` VALUES (7, '12345678910', NULL, '$2a$10$OFwV1UEJMi6ziTPj5w6/n.4uvfE7iTnnLBL0JVzcYIsYbEkoVt/ai', '威震天1', NULL, 1, '2025-12-24 20:39:34', '2026-01-17 23:11:39');
+INSERT INTO `user` VALUES (3, NULL, 'test@example.com', '$2a$10$e2kTr31d9I2M8UFdo8Q5Wuf007ufzX.LnUO9Met8KvvS3f6TTixm6', '威震天', NULL, 1, 300.00, NULL, '2026-01-17 22:58:21');
+INSERT INTO `user` VALUES (4, '123456', NULL, '$2a$10$7qRXdjwXJbhWyIGhp/XzlOvuNy4rIkZazCZFlbptyPJVb2l3iij.i', NULL, NULL, 1, 0.00, NULL, NULL);
+INSERT INTO `user` VALUES (5, '1234567', NULL, '$2a$10$nm.4qBvnKnI69qa.f9dJrO/Apaf8stLYkwGYx1nktDSLlZ.j5Lm52', NULL, NULL, 1, 0.00, '2025-12-13 22:09:49', '2025-12-13 22:09:49');
+INSERT INTO `user` VALUES (6, '12345678', NULL, '$2a$10$epklKD2qV/jvKlCNp0x.EOWin0wuhKfNG9wABlQSgicI6smWYgzlC', NULL, NULL, 1, 0.00, '2025-12-13 23:53:01', '2025-12-13 23:53:01');
+INSERT INTO `user` VALUES (7, '12345678910', NULL, '$2a$10$OFwV1UEJMi6ziTPj5w6/n.4uvfE7iTnnLBL0JVzcYIsYbEkoVt/ai', '威震天1', NULL, 1, 500.00, '2025-12-24 20:39:34', '2026-01-17 23:11:39');
+
+-- ----------------------------
+-- Table structure for wallet_txn
+-- ----------------------------
+DROP TABLE IF EXISTS `wallet_txn`;
+CREATE TABLE `wallet_txn`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '流水类型：RECHARGE/WITHDRAW/PAY',
+  `amount` decimal(10, 2) NOT NULL COMMENT '变动金额，正数入账，负数出账',
+  `balance_before` decimal(10, 2) NOT NULL COMMENT '变更前余额',
+  `balance_after` decimal(10, 2) NOT NULL COMMENT '变更后余额',
+  `biz_no` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '业务单号（订单号/交易号）',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_wallet_txn_user`(`user_id` ASC) USING BTREE,
+  INDEX `idx_wallet_txn_created`(`created_at` ASC) USING BTREE,
+  CONSTRAINT `fk_wallet_txn_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '账户流水表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user_role

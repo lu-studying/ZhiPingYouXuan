@@ -12,10 +12,11 @@ import request from '@/utils/request'
  * 
  * @returns {Promise<Array>} 订单列表
  */
-export function listMyOrders() {
+export function listMyOrders(payStatus = null) {
   return request({
     url: '/users/me/orders',
-    method: 'get'
+    method: 'get',
+    params: payStatus === null || payStatus === undefined ? {} : { payStatus }
   })
 }
 
@@ -25,10 +26,11 @@ export function listMyOrders() {
  * @param {number} shopId - 商家ID
  * @returns {Promise<{content: Array, total: number}>}
  */
-export function listOrdersByShop(shopId) {
+export function listOrdersByShop(shopId, payStatus = null) {
   return request({
     url: `/shops/${shopId}/orders`,
-    method: 'get'
+    method: 'get',
+    params: payStatus === null || payStatus === undefined ? {} : { payStatus }
   })
 }
 

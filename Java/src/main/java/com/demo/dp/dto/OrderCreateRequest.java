@@ -1,6 +1,5 @@
 package com.demo.dp.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -9,27 +8,22 @@ import java.time.LocalDateTime;
 public class OrderCreateRequest {
 
     /**
-     * 消费金额，单位：元。
+     * 下单项 JSON 字符串，例如：
+     * [{"menuId":1,"quantity":2},{"menuId":5,"quantity":1}]
      */
-    private BigDecimal amount;
+    private String items;
 
     /**
      * 到店时间。
      */
     private LocalDateTime visitTime;
 
-    /**
-     * 消费项明细 JSON 字符串，例如：
-     * [{"name":"毛肚","price":58,"count":1},{"name":"鸭血","price":28,"count":1}]
-     */
-    private String items;
-
-    public BigDecimal getAmount() {
-        return amount;
+    public String getItems() {
+        return items;
     }
 
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
+    public void setItems(String items) {
+        this.items = items;
     }
 
     public LocalDateTime getVisitTime() {
@@ -40,13 +34,6 @@ public class OrderCreateRequest {
         this.visitTime = visitTime;
     }
 
-    public String getItems() {
-        return items;
-    }
-
-    public void setItems(String items) {
-        this.items = items;
-    }
 }
 
 

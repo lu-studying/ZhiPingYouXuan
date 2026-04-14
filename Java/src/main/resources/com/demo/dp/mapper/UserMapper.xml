@@ -11,41 +11,49 @@
         <result property="nickname" column="nickname"/>
         <result property="avatar" column="avatar"/>
         <result property="status" column="status"/>
+        <result property="balance" column="balance" jdbcType="DECIMAL"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <!-- 根据手机号查询 -->
     <select id="findByMobile" resultMap="UserResultMap">
-        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
         FROM user
         WHERE mobile = #{mobile}
     </select>
 
     <!-- 根据邮箱查询 -->
     <select id="findByEmail" resultMap="UserResultMap">
-        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
         FROM user
         WHERE email = #{email}
     </select>
 
     <!-- 根据 ID 查询 -->
     <select id="findById" resultMap="UserResultMap">
-        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
         FROM user
         WHERE id = #{id}
     </select>
 
+    <select id="findByIdForUpdate" resultMap="UserResultMap">
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
+        FROM user
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
     <!-- 插入用户 -->
     <insert id="insert" parameterType="com.demo.dp.domain.entity.User" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO user (mobile, email, password_hash, nickname, avatar, status, created_at, updated_at)
-        VALUES (#{mobile}, #{email}, #{passwordHash}, #{nickname}, #{avatar}, 
-                COALESCE(#{status}, 1), NOW(), NOW())
+        INSERT INTO user (mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at)
+        VALUES (#{mobile}, #{email}, #{passwordHash}, #{nickname}, #{avatar},
+                COALESCE(#{status}, 1), COALESCE(#{balance}, 0.00), NOW(), NOW())
     </insert>
 
     <!-- 分页查询用户列表（支持关键词搜索） -->
     <select id="findByConditions" resultMap="UserResultMap">
-        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
         FROM user
         <where>
             AND status = 1
@@ -83,7 +91,7 @@
 
     <!-- 根据昵称查询用户（用于查重，排除指定用户ID） -->
     <select id="findByNickname" resultMap="UserResultMap">
-        SELECT id, mobile, email, password_hash, nickname, avatar, status, created_at, updated_at
+        SELECT id, mobile, email, password_hash, nickname, avatar, status, balance, created_at, updated_at
         FROM user
         WHERE nickname = #{nickname}
         <if test="excludeUserId != null">
@@ -91,6 +99,13 @@
         </if>
         LIMIT 1
     </select>
+
+    <update id="changeBalance">
+        UPDATE user
+        SET balance = balance + #{delta},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
 
     <update id="delete">
         UPDATE user

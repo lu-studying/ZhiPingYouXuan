@@ -20,20 +20,40 @@ export function listMyOrders() {
 }
 
 /**
- * 创建订单
+ * 创建待支付订单
  * 
  * @param {number} shopId - 商家ID
- * @param {Object} data - 订单信息
- * @param {number} data.amount - 消费金额
- * @param {string} data.visitTime - 到店时间（ISO 8601格式）
- * @param {string} data.items - 消费项明细（JSON字符串，可选）
- * @returns {Promise<Object>} 创建的订单对象
+ * @param {Object} data - 下单信息
+ * @param {string} data.visitTime - 到店时间（ISO 8601格式，可选）
+ * @param {string} data.items - 下单项JSON字符串，格式：[{menuId, quantity}]
+ * @returns {Promise<Object>} 创建的订单对象（payStatus=0）
  */
 export function createOrder(shopId, data) {
   return request({
     url: `/shops/${shopId}/orders`,
     method: 'post',
     data
+  })
+}
+
+/**
+ * 模拟支付
+ */
+export function payOrder(orderId, payMethod = 'MOCK_WECHAT') {
+  return request({
+    url: `/orders/${orderId}/pay`,
+    method: 'post',
+    data: { payMethod }
+  })
+}
+
+/**
+ * 取消待支付订单
+ */
+export function cancelOrder(orderId) {
+  return request({
+    url: `/orders/${orderId}/cancel`,
+    method: 'post'
   })
 }
 

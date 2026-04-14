@@ -69,3 +69,27 @@ export function updateMyInfo(userInfo) {
   })
 }
 
+export function getMyWallet() {
+  return request({
+    url: '/users/me/wallet',
+    method: 'get',
+    loading: false
+  })
+}
+
+export function rechargeWallet(amount) {
+  return request({
+    url: '/users/me/wallet/recharge',
+    method: 'post',
+    data: { amount }
+  })
+}
+
+export function withdrawWallet(amount) {
+  return request({
+    url: '/users/me/wallet/withdraw',
+    method: 'post',
+    data: { amount }
+  })
+}
+

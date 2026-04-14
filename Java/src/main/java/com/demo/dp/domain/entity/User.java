@@ -1,6 +1,7 @@
 package com.demo.dp.domain.entity;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 /**
  * 用户实体，对应表 user。
@@ -23,6 +24,8 @@ public class User {
 
     private Integer status; // 状态：1 正常，0 禁用
 
+    private BigDecimal balance; // 账户余额
+
     private LocalDateTime createdAt; // 创建时间
 
     private LocalDateTime updatedAt; // 更新时间
@@ -42,6 +45,8 @@ public class User {
     public void setAvatar(String avatar) { this.avatar = avatar; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
+    public BigDecimal getBalance() { return balance; }
+    public void setBalance(BigDecimal balance) { this.balance = balance; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

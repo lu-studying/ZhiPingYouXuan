@@ -32,10 +32,7 @@ public class OrderRecordController {
     }
 
     /**
-     * 创建消费记录。
-     *
-     * <p>路径：POST /api/shops/{shopId}/orders
-     * <p>认证：需要登录，从 Authentication 中获取 userId。
+     * 创建待支付订单。
      */
     @PostMapping("/shops/{shopId}/orders")
     public ResponseEntity<OrderRecord> createOrder(@PathVariable Long shopId,
@@ -45,11 +42,32 @@ public class OrderRecordController {
         OrderRecord record = orderRecordService.createOrder(
                 userId,
                 shopId,
-                req.getAmount(),
                 req.getVisitTime(),
                 req.getItems()
         );
         return ResponseEntity.ok(record);
+    }
+
+    /**
+     * 模拟支付。
+     */
+    @PostMapping("/orders/{orderId}/pay")
+    public ResponseEntity<OrderRecord> mockPay(@PathVariable Long orderId,
+                                               @RequestBody(required = false) Map<String, String> req,
+                                               Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        String payMethod = req == null ? null : req.get("payMethod");
+        return ResponseEntity.ok(orderRecordService.mockPay(userId, orderId, payMethod));
+    }
+
+    /**
+     * 取消待支付订单。
+     */
+    @PostMapping("/orders/{orderId}/cancel")
+    public ResponseEntity<OrderRecord> cancelOrder(@PathVariable Long orderId,
+                                                   Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        return ResponseEntity.ok(orderRecordService.cancelOrder(userId, orderId));
     }
 
     /**
@@ -58,9 +76,10 @@ public class OrderRecordController {
      * <p>路径：GET /api/users/me/orders
      */
     @GetMapping("/users/me/orders")
-    public ResponseEntity<List<OrderRecord>> listMyOrders(Authentication authentication) {
+    public ResponseEntity<List<OrderRecord>> listMyOrders(@RequestParam(required = false) Integer payStatus,
+                                                           Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
-        List<OrderRecord> list = orderRecordService.listByUser(userId);
+        List<OrderRecord> list = orderRecordService.listByUser(userId, payStatus);
         return ResponseEntity.ok(list);
     }
 
@@ -71,8 +90,9 @@ public class OrderRecordController {
      * <p>说明：可用于管理端查看某个店的消费记录。
      */
     @GetMapping("/shops/{shopId}/orders")
-    public ResponseEntity<Map<String, Object>> listByShop(@PathVariable Long shopId) {
-        List<OrderRecord> list = orderRecordService.listByShop(shopId);
+    public ResponseEntity<Map<String, Object>> listByShop(@PathVariable Long shopId,
+                                                           @RequestParam(required = false) Integer payStatus) {
+        List<OrderRecord> list = orderRecordService.listByShop(shopId, payStatus);
         Map<String, Object> result = new HashMap<>();
         result.put("content", list);
         result.put("total", list.size());

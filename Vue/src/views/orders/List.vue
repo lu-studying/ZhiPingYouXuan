@@ -59,6 +59,16 @@
           />
         </el-form-item>
 
+        <!-- 支付状态筛选 -->
+        <el-form-item label="支付状态">
+          <el-select v-model="searchForm.payStatus" placeholder="全部状态" clearable style="width: 140px" @change="handleSearch">
+            <el-option label="全部" :value="null" />
+            <el-option label="待支付" :value="0" />
+            <el-option label="已支付" :value="1" />
+            <el-option label="已取消" :value="2" />
+          </el-select>
+        </el-form-item>
+
         <!-- 金额范围筛选 -->
         <el-form-item label="消费金额">
           <el-input-number
@@ -104,6 +114,7 @@
         :default-sort="{ prop: 'createdAt', order: 'descending' }"
       >
         <el-table-column prop="id" label="订单ID" width="100" sortable />
+        <el-table-column prop="orderNo" label="订单号" width="170" show-overflow-tooltip />
         <el-table-column label="商家" min-width="150">
           <template #default="{ row }">
             <el-link
@@ -121,6 +132,19 @@
         <el-table-column label="消费金额" width="120" sortable>
           <template #default="{ row }">
             <span class="amount-text">¥ {{ formatAmount(row.amount) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="支付状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="payStatusTagType(row.payStatus)">{{ payStatusText(row.payStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="支付方式" width="120">
+          <template #default="{ row }">{{ row.payMethod || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="支付时间" width="180" sortable prop="paidAt">
+          <template #default="{ row }">
+            {{ formatDateTime(row.paidAt) }}
           </template>
         </el-table-column>
         <el-table-column label="到店时间" width="180" sortable prop="visitTime">
@@ -184,6 +208,7 @@
     >
       <el-descriptions v-if="selectedOrder" :column="2" border>
         <el-descriptions-item label="订单ID">{{ selectedOrder.id }}</el-descriptions-item>
+        <el-descriptions-item label="订单号">{{ selectedOrder.orderNo || '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户ID">{{ selectedOrder.userId }}</el-descriptions-item>
         <el-descriptions-item label="商家">
           <el-link
@@ -199,6 +224,11 @@
         <el-descriptions-item label="消费金额">
           <span class="amount-text">¥ {{ formatAmount(selectedOrder.amount) }}</span>
         </el-descriptions-item>
+        <el-descriptions-item label="支付状态">
+          <el-tag :type="payStatusTagType(selectedOrder.payStatus)">{{ payStatusText(selectedOrder.payStatus) }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="支付方式">{{ selectedOrder.payMethod || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="支付时间">{{ formatDateTime(selectedOrder.paidAt) }}</el-descriptions-item>
         <el-descriptions-item label="到店时间">
           {{ formatDateTime(selectedOrder.visitTime) }}
         </el-descriptions-item>
@@ -247,6 +277,7 @@ const currentShopId = ref(null) // 记录当前加载的商家ID
 // 搜索表单
 const searchForm = reactive({
   shopId: null,
+  payStatus: null,
   dateRange: null,
   minAmount: null,
   maxAmount: null
@@ -292,12 +323,12 @@ const loadOrders = async () => {
 
     // 如果选择了商家，获取该商家的订单
     if (searchForm.shopId) {
-      const response = await listOrdersByShop(searchForm.shopId)
+      const response = await listOrdersByShop(searchForm.shopId, searchForm.payStatus)
       orders = response.content || []
       currentShopId.value = searchForm.shopId
     } else {
       // 否则获取当前用户的订单
-      const response = await listMyOrders()
+      const response = await listMyOrders(searchForm.payStatus)
       orders = Array.isArray(response) ? response : []
       currentShopId.value = null
     }
@@ -379,6 +410,7 @@ const handleSearch = () => {
  */
 const handleReset = () => {
   searchForm.shopId = null
+  searchForm.payStatus = null
   searchForm.dateRange = null
   searchForm.minAmount = null
   searchForm.maxAmount = null
@@ -459,6 +491,18 @@ const formatItems = (items) => {
   } catch (error) {
     return items
   }
+}
+
+const payStatusText = (status) => {
+  if (status === 1) return '已支付'
+  if (status === 2) return '已取消'
+  return '待支付'
+}
+
+const payStatusTagType = (status) => {
+  if (status === 1) return 'success'
+  if (status === 2) return 'danger'
+  return 'warning'
 }
 
 // 组件挂载时加载数据

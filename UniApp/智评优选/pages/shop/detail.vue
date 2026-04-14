@@ -42,6 +42,7 @@
             :key="menu.id"
             :menu="menu"
             @click="handleMenuClick"
+            @add="handleAddToOrder"
           />
         </view>
         <view v-else class="menu-empty-placeholder">
@@ -56,7 +57,7 @@
       <!-- AI 推荐点评区域 -->
       <view v-if="recommendedReviews.length > 0" class="ai-recommend-section">
         <view class="section-header">
-          <text class="section-title">✨ AI 为你推荐</text>
+          <text class="section-title">✨ 根据您的用户画像为你推荐</text>
         </view>
         <view 
           v-for="item in recommendedReviews" 
@@ -110,11 +111,21 @@
     <view class="create-review-btn" @click="goToCreateReview">
       <text class="btn-text">✍️ 写点评</text>
     </view>
+
+    <view v-if="selectedItems.length > 0" class="selected-summary">
+      <text class="selected-summary-text">已选{{ selectedKindCount }}种，共{{ selectedTotalCount }}份，合计¥{{ checkoutTotal.toFixed(2) }}</text>
+      <text class="selected-summary-clear" @click="clearSelectedItems">清空</text>
+    </view>
+
+    <!-- 下单支付按钮 -->
+    <view class="checkout-btn" @click="handleCheckout">
+      <text class="btn-text">{{ checkoutBtnText }}</text>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { getShop } from '@/api/shops'
 import { recommendReviews, listReviews } from '@/api/reviews'
@@ -140,6 +151,22 @@ const reviewsPage = ref(0)
 const reviewsHasMore = ref(true)
 
 const authStore = useAuthStore()
+const selectedItems = ref([])
+
+const checkoutTotal = computed(() => {
+  return selectedItems.value.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
+})
+
+const selectedKindCount = computed(() => selectedItems.value.length)
+
+const selectedTotalCount = computed(() => {
+  return selectedItems.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+})
+
+const checkoutBtnText = computed(() => {
+  if (selectedItems.value.length === 0) return '🛒 请选择菜品'
+  return `🛒 去结算（${selectedTotalCount.value}份）¥${checkoutTotal.value.toFixed(2)}`
+})
 
 onMounted(() => {
   // 从路由参数获取 shopId
@@ -251,14 +278,53 @@ const loadReviews = async (isLoadMore = false) => {
  * 处理菜单点击事件
  */
 const handleMenuClick = (menu) => {
-  // 可以在这里添加菜单详情页跳转或其他交互
-  console.log('点击菜单:', menu)
-  // 暂时只做提示，后续可以扩展为菜单详情页
-  uni.showToast({
-    title: menu.name,
-    icon: 'none',
-    duration: 1500
+  uni.showToast({ title: menu.name, icon: 'none', duration: 1200 })
+}
+
+const handleAddToOrder = ({ menu, quantity }) => {
+  const idx = selectedItems.value.findIndex(i => i.menuId === menu.id)
+  if (idx > -1) {
+    selectedItems.value[idx].quantity += quantity
+  } else {
+    selectedItems.value.push({
+      menuId: menu.id,
+      name: menu.name,
+      price: menu.price,
+      image: menu.image || '',
+      quantity
+    })
+  }
+}
+
+const clearSelectedItems = () => {
+  selectedItems.value = []
+  uni.showToast({ title: '已清空', icon: 'none', duration: 1000 })
+}
+
+const handleCheckout = async () => {
+  if (!authStore.isLoggedIn) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    uni.navigateTo({ url: '/pages/user/login' })
+    return
+  }
+  if (selectedItems.value.length === 0) {
+    uni.showToast({ title: '请先加入菜品', icon: 'none' })
+    return
+  }
+
+  uni.setStorageSync('pending_checkout_order', {
+    shopId: Number(shopId.value),
+    shopName: shop.value?.name || '',
+    items: selectedItems.value.map(i => ({
+      menuId: i.menuId,
+      name: i.name,
+      image: i.image || '',
+      price: Number(i.price || 0),
+      quantity: Number(i.quantity || 1)
+    }))
   })
+
+  uni.navigateTo({ url: '/pages/user/orders?mode=checkout' })
 }
 
 /**
@@ -501,7 +567,7 @@ onReachBottom(() => {
 .create-review-btn {
   position: fixed;
   bottom: 40rpx;
-  left: 50%;
+  left: 25%;
   transform: translateX(-50%);
   width: 200rpx;
   height: 80rpx;
@@ -514,12 +580,54 @@ onReachBottom(() => {
   z-index: 100;
 }
 
-.create-review-btn:active {
+.selected-summary {
+  position: fixed;
+  bottom: 132rpx;
+  right: 24rpx;
+  left: 24rpx;
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: 14rpx;
+  padding: 16rpx 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+
+.selected-summary-text {
+  color: #fff;
+  font-size: 24rpx;
+}
+
+.selected-summary-clear {
+  color: #ffd666;
+  font-size: 24rpx;
+  padding-left: 24rpx;
+}
+
+.checkout-btn {
+  position: fixed;
+  bottom: 40rpx;
+  left: 75%;
+  transform: translateX(-50%);
+  width: 320rpx;
+  height: 80rpx;
+  background: linear-gradient(135deg, #ff8a00 0%, #ff5a5f 100%);
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(255, 90, 95, 0.35);
+  z-index: 100;
+}
+
+.create-review-btn:active,
+.checkout-btn:active {
   transform: translateX(-50%) scale(0.95);
 }
 
 .btn-text {
-  font-size: 28rpx;
+  font-size: 24rpx;
   color: #fff;
   font-weight: 500;
 }

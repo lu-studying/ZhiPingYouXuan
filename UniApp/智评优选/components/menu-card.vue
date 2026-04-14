@@ -23,6 +23,9 @@
       </text>
       <view class="menu-footer">
         <text class="menu-price">{{ formatPrice(menu.price) }}</text>
+        <view class="menu-actions" @click.stop>
+          <button class="add-btn" @click="addToOrder">加入订单</button>
+        </view>
       </view>
     </view>
   </view>
@@ -38,10 +41,15 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['click'])
+const emit = defineEmits(['click', 'add'])
 
 const handleClick = () => {
   emit('click', props.menu)
+}
+
+const addToOrder = () => {
+  emit('add', { menu: props.menu, quantity: 1 })
+  uni.showToast({ title: '已加入待下单', icon: 'none', duration: 1000 })
 }
 </script>
 
@@ -135,6 +143,7 @@ const handleClick = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
@@ -143,12 +152,30 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12rpx;
 }
 
 .menu-price {
   font-size: 32rpx;
   font-weight: bold;
   color: #ff6b35;
+}
+
+.menu-actions {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.add-btn {
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 24rpx;
+  background: #3c9cff;
+  color: #fff;
+  border: none;
+  font-size: 22rpx;
 }
 </style>
 

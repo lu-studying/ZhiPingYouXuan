@@ -13,14 +13,16 @@ import java.util.List;
 @Mapper
 public interface OrderRecordMapper {
     /**
-     * 根据用户 ID 查询消费记录
+     * 根据用户 ID 查询消费记录（可按支付状态筛选）
      */
-    List<OrderRecord> findByUserId(@Param("userId") Long userId);
+    List<OrderRecord> findByUserId(@Param("userId") Long userId,
+                                   @Param("payStatus") Integer payStatus);
 
     /**
-     * 根据商家 ID 查询消费记录
+     * 根据商家 ID 查询消费记录（可按支付状态筛选）
      */
-    List<OrderRecord> findByShopId(@Param("shopId") Long shopId);
+    List<OrderRecord> findByShopId(@Param("shopId") Long shopId,
+                                   @Param("payStatus") Integer payStatus);
 
     /**
      * 插入新消费记录
@@ -31,6 +33,18 @@ public interface OrderRecordMapper {
      * 根据 ID 查询消费记录
      */
     OrderRecord findById(@Param("id") Long id);
+
+    /**
+     * 标记订单为已支付
+     */
+    int markPaid(@Param("id") Long id,
+                 @Param("payMethod") String payMethod,
+                 @Param("payTxnNo") String payTxnNo);
+
+    /**
+     * 标记订单为已取消
+     */
+    int markCanceled(@Param("id") Long id);
 
     /**
      * 查询用户在某店最近一条消费记录（用于生成点评上下文）。

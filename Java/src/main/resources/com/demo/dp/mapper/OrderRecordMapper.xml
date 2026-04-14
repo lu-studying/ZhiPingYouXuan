@@ -7,38 +7,54 @@
         <id property="id" column="id"/>
         <result property="shopId" column="shop_id"/>
         <result property="userId" column="user_id"/>
+        <result property="orderNo" column="order_no"/>
         <result property="amount" column="amount" jdbcType="DECIMAL"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="payMethod" column="pay_method"/>
+        <result property="payTxnNo" column="pay_txn_no"/>
+        <result property="paidAt" column="paid_at"/>
         <result property="visitTime" column="visit_time"/>
         <result property="items" column="items" jdbcType="VARCHAR"/>
         <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <!-- 根据用户 ID 查询 -->
     <select id="findByUserId" resultMap="OrderRecordResultMap">
-        SELECT id, shop_id, user_id, amount, visit_time, items, created_at
+        SELECT id, shop_id, user_id, order_no, amount, pay_status, pay_method, pay_txn_no, paid_at,
+               visit_time, items, created_at, updated_at
         FROM order_record
         WHERE user_id = #{userId}
+        <if test="payStatus != null">
+            AND pay_status = #{payStatus}
+        </if>
         ORDER BY created_at DESC
     </select>
 
     <!-- 根据商家 ID 查询 -->
     <select id="findByShopId" resultMap="OrderRecordResultMap">
-        SELECT id, shop_id, user_id, amount, visit_time, items, created_at
+        SELECT id, shop_id, user_id, order_no, amount, pay_status, pay_method, pay_txn_no, paid_at,
+               visit_time, items, created_at, updated_at
         FROM order_record
         WHERE shop_id = #{shopId}
+        <if test="payStatus != null">
+            AND pay_status = #{payStatus}
+        </if>
         ORDER BY created_at DESC
     </select>
 
     <!-- 根据 ID 查询 -->
     <select id="findById" resultMap="OrderRecordResultMap">
-        SELECT id, shop_id, user_id, amount, visit_time, items, created_at
+        SELECT id, shop_id, user_id, order_no, amount, pay_status, pay_method, pay_txn_no, paid_at,
+               visit_time, items, created_at, updated_at
         FROM order_record
         WHERE id = #{id}
     </select>
 
     <!-- 查询用户在某店最近一条消费记录 -->
     <select id="findLatestByUserAndShop" resultMap="OrderRecordResultMap">
-        SELECT id, shop_id, user_id, amount, visit_time, items, created_at
+        SELECT id, shop_id, user_id, order_no, amount, pay_status, pay_method, pay_txn_no, paid_at,
+               visit_time, items, created_at, updated_at
         FROM order_record
         WHERE user_id = #{userId}
           AND shop_id = #{shopId}
@@ -48,9 +64,28 @@
 
     <!-- 插入消费记录 -->
     <insert id="insert" parameterType="com.demo.dp.domain.entity.OrderRecord" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO order_record (shop_id, user_id, amount, visit_time, items, created_at)
-        VALUES (#{shopId}, #{userId}, #{amount}, #{visitTime}, #{items}, NOW())
+        INSERT INTO order_record (shop_id, user_id, order_no, amount, pay_status, visit_time, items, created_at, updated_at)
+        VALUES (#{shopId}, #{userId}, #{orderNo}, #{amount}, COALESCE(#{payStatus}, 0), #{visitTime}, #{items}, NOW(), NOW())
     </insert>
+
+    <update id="markPaid">
+        UPDATE order_record
+        SET pay_status = 1,
+            pay_method = #{payMethod},
+            pay_txn_no = #{payTxnNo},
+            paid_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND pay_status = 0
+    </update>
+
+    <update id="markCanceled">
+        UPDATE order_record
+        SET pay_status = 2,
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND pay_status = 0
+    </update>
 
     <!-- 统计所有订单总数 -->
     <select id="countAll" resultType="long">

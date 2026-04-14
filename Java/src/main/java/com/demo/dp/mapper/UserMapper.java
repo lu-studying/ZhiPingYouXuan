@@ -3,6 +3,7 @@ package com.demo.dp.mapper;
 import com.demo.dp.domain.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import java.math.BigDecimal;
 
 /**
  * 用户 Mapper 接口。
@@ -29,6 +30,11 @@ public interface UserMapper {
      * 根据 ID 查询用户
      */
     User findById(@Param("id") Long id);
+
+    /**
+     * 根据 ID 查询用户并加行锁（余额操作场景）。
+     */
+    User findByIdForUpdate(@Param("id") Long id);
 
     /**
      * 分页查询用户列表（支持关键词搜索）。
@@ -66,6 +72,11 @@ public interface UserMapper {
      * @return 用户对象，如果不存在则返回 null
      */
     User findByNickname(@Param("nickname") String nickname, @Param("excludeUserId") Long excludeUserId);
+
+    /**
+     * 增减余额（delta可正可负）。
+     */
+    int changeBalance(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
     int delete(@Param("id") Long id);
 }

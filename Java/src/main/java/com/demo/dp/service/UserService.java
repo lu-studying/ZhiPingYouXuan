@@ -2,6 +2,7 @@ package com.demo.dp.service;
 
 import com.demo.dp.domain.entity.User;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 /**
@@ -75,4 +76,10 @@ public interface UserService {
     User updateUser(User user);
 
     void deleteUser(Long id);
+
+    BigDecimal getBalance(Long userId);
+
+    BigDecimal recharge(Long userId, BigDecimal amount);
+
+    BigDecimal withdraw(Long userId, BigDecimal amount);
 }

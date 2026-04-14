@@ -1,12 +1,15 @@
 package com.demo.dp.service;
 
 import com.demo.dp.domain.entity.User;
+import com.demo.dp.domain.entity.WalletTxn;
 import com.demo.dp.mapper.UserMapper;
 import com.demo.dp.mapper.UserTagMapper;
+import com.demo.dp.mapper.WalletTxnMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -20,11 +23,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserTagMapper userTagMapper;
+    private final WalletTxnMapper walletTxnMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserMapper userMapper, UserTagMapper userTagMapper, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserMapper userMapper, UserTagMapper userTagMapper, WalletTxnMapper walletTxnMapper, PasswordEncoder passwordEncoder) {
         this.userMapper = userMapper;
         this.userTagMapper = userTagMapper;
+        this.walletTxnMapper = walletTxnMapper;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -58,6 +63,7 @@ public class UserServiceImpl implements UserService {
         }
         u.setPasswordHash(passwordEncoder.encode(password));
         u.setStatus(1);
+        u.setBalance(BigDecimal.ZERO);
         u.setCreatedAt(LocalDateTime.now());
         u.setUpdatedAt(LocalDateTime.now());
         userMapper.insert(u);
@@ -154,6 +160,73 @@ public class UserServiceImpl implements UserService {
             userTagMapper.deleteByUserId(id);
         }
         userMapper.delete(id);
+    }
+
+    @Override
+    public BigDecimal getBalance(Long userId) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        return user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal recharge(Long userId, BigDecimal amount) {
+        BigDecimal validAmount = validateWalletAmount(amount);
+        User user = requireUserForUpdate(userId);
+        BigDecimal before = user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+        BigDecimal after = before.add(validAmount);
+        userMapper.changeBalance(userId, validAmount);
+        insertWalletTxn(userId, "RECHARGE", validAmount, before, after, null, "账户充值");
+        return after;
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal withdraw(Long userId, BigDecimal amount) {
+        BigDecimal validAmount = validateWalletAmount(amount);
+        User user = requireUserForUpdate(userId);
+        BigDecimal before = user.getBalance() == null ? BigDecimal.ZERO : user.getBalance();
+        if (before.compareTo(validAmount) < 0) {
+            throw new IllegalArgumentException("账户余额不足");
+        }
+        BigDecimal after = before.subtract(validAmount);
+        userMapper.changeBalance(userId, validAmount.negate());
+        insertWalletTxn(userId, "WITHDRAW", validAmount.negate(), before, after, null, "账户提现");
+        return after;
+    }
+
+    private User requireUserForUpdate(Long userId) {
+        User user = userMapper.findByIdForUpdate(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        return user;
+    }
+
+    private BigDecimal validateWalletAmount(BigDecimal amount) {
+        if (amount == null) {
+            throw new IllegalArgumentException("金额不能为空");
+        }
+        BigDecimal normalized = amount.setScale(2, java.math.RoundingMode.HALF_UP);
+        if (normalized.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("金额必须大于0");
+        }
+        return normalized;
+    }
+
+    private void insertWalletTxn(Long userId, String type, BigDecimal amount, BigDecimal before, BigDecimal after, String bizNo, String remark) {
+        WalletTxn txn = new WalletTxn();
+        txn.setUserId(userId);
+        txn.setType(type);
+        txn.setAmount(amount);
+        txn.setBalanceBefore(before);
+        txn.setBalanceAfter(after);
+        txn.setBizNo(bizNo);
+        txn.setRemark(remark);
+        walletTxnMapper.insert(txn);
     }
 }
 

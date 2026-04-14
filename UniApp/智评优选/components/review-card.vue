@@ -3,7 +3,7 @@
     <!-- AI 推荐标识 -->
     <view v-if="showRecommendReason && recommendReason" class="ai-recommend-badge">
       <text class="ai-icon">✨</text>
-      <text class="ai-text">AI 推荐</text>
+      <text class="ai-text">精确推荐点评</text>
     </view>
     
     <!-- 用户信息 -->

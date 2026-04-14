@@ -19,14 +19,20 @@
         :key="index"
         class="order-item"
       >
-        <text class="item-name">{{ item.name || '消费项' }}</text>
-        <text v-if="item.price" class="item-price">¥{{ formatAmount(item.price) }}</text>
+        <view class="item-main">
+          <text class="item-name">{{ item.name || '消费项' }}</text>
+          <text class="item-meta">
+            {{ formatAmount(item.price) }} / 份 x {{ formatQuantity(item.quantity) }}
+          </text>
+        </view>
+        <text class="item-price">¥{{ formatAmount(getItemSubtotal(item)) }}</text>
       </view>
     </view>
     
     <!-- 订单ID（可选显示） -->
     <view class="order-footer">
-      <text class="order-id">订单号：{{ order.id }}</text>
+      <text class="order-id">订单号：{{ order.orderNo || order.id }}</text>
+      <text class="order-status" :class="statusClass">{{ statusText }}</text>
     </view>
   </view>
 </template>
@@ -58,6 +64,18 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['click'])
+
+const statusText = computed(() => {
+  if (props.order.payStatus === 1) return '已支付'
+  if (props.order.payStatus === 2) return '已取消'
+  return '待支付'
+})
+
+const statusClass = computed(() => {
+  if (props.order.payStatus === 1) return 'paid'
+  if (props.order.payStatus === 2) return 'canceled'
+  return 'pending'
+})
 
 /**
  * 解析消费项明细
@@ -93,6 +111,15 @@ const formatAmount = (amount) => {
     return '0.00'
   }
   return Number(amount).toFixed(2)
+}
+
+const formatQuantity = (quantity) => {
+  const value = Number(quantity || 0)
+  return value > 0 ? value : 0
+}
+
+const getItemSubtotal = (item) => {
+  return Number(item?.price || 0) * Number(item?.quantity || 0)
 }
 
 /**
@@ -189,31 +216,57 @@ const handleClick = () => {
 .order-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 12rpx 0;
-  font-size: 26rpx;
-  color: #666;
+  gap: 20rpx;
+}
+
+.item-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .item-name {
-  flex: 1;
+  display: block;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.item-meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #999;
 }
 
 .item-price {
   color: #333;
   font-weight: 500;
-  margin-left: 20rpx;
+  font-size: 24rpx;
+  white-space: nowrap;
 }
 
 /* 订单底部 */
 .order-footer {
   padding-top: 20rpx;
   border-top: 1rpx solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .order-id {
   font-size: 22rpx;
   color: #ccc;
 }
+
+.order-status {
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.order-status.pending { color: #e6a23c; }
+.order-status.paid { color: #67c23a; }
+.order-status.canceled { color: #f56c6c; }
 </style>
 

@@ -3,6 +3,7 @@ package com.demo.dp.controller;
 import com.demo.dp.domain.entity.Review;
 import com.demo.dp.domain.entity.Tag;
 import com.demo.dp.domain.entity.User;
+import com.demo.dp.dto.WalletAmountRequest;
 import com.demo.dp.service.ReviewService;
 import com.demo.dp.service.TagService;
 import com.demo.dp.service.UserService;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 /**
  * 用户管理接口控制器。
@@ -167,6 +169,37 @@ public class UserController {
         }
 
         return ResponseEntity.ok(userOpt.get());
+    }
+
+    @GetMapping("/me/wallet")
+    public ResponseEntity<Map<String, Object>> getMyWallet(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        BigDecimal balance = userService.getBalance(userId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("balance", balance);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/me/wallet/recharge")
+    public ResponseEntity<Map<String, Object>> recharge(Authentication authentication,
+                                                        @RequestBody WalletAmountRequest req) {
+        Long userId = Long.parseLong(authentication.getName());
+        BigDecimal balance = userService.recharge(userId, req == null ? null : req.getAmount());
+        Map<String, Object> result = new HashMap<>();
+        result.put("balance", balance);
+        result.put("message", "充值成功");
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/me/wallet/withdraw")
+    public ResponseEntity<Map<String, Object>> withdraw(Authentication authentication,
+                                                        @RequestBody WalletAmountRequest req) {
+        Long userId = Long.parseLong(authentication.getName());
+        BigDecimal balance = userService.withdraw(userId, req == null ? null : req.getAmount());
+        Map<String, Object> result = new HashMap<>();
+        result.put("balance", balance);
+        result.put("message", "提现成功");
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
