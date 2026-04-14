@@ -9,6 +9,7 @@ import com.demo.dp.mapper.AiCallLogMapper;
 import com.demo.dp.mapper.OrderRecordMapper;
 import com.demo.dp.mapper.ReviewKeywordMapper;
 import com.demo.dp.mapper.ReviewMapper;
+import com.demo.dp.mapper.UserReviewLikeMapper;
 import com.demo.dp.service.AiReviewService;
 import com.demo.dp.service.TagService;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ public class AiReviewServiceImpl implements AiReviewService {
     private final AiCallLogMapper aiCallLogMapper;
     private final ReviewKeywordMapper reviewKeywordMapper;
     private final TagService tagService;
+    private final UserReviewLikeMapper userReviewLikeMapper;
 
     /**
      * 构造函数：注入大模型客户端、Prompt 组装器、点评查询、订单查询、AI 调用日志 Mapper。
@@ -53,7 +55,8 @@ public class AiReviewServiceImpl implements AiReviewService {
                                OrderRecordMapper orderRecordMapper,
                                AiCallLogMapper aiCallLogMapper,
                                ReviewKeywordMapper reviewKeywordMapper,
-                               TagService tagService) {
+                               TagService tagService,
+                               UserReviewLikeMapper userReviewLikeMapper) {
         this.aiClient = aiClient;
         this.promptBuilder = promptBuilder;
         this.reviewMapper = reviewMapper;
@@ -61,6 +64,7 @@ public class AiReviewServiceImpl implements AiReviewService {
         this.aiCallLogMapper = aiCallLogMapper;
         this.reviewKeywordMapper = reviewKeywordMapper;
         this.tagService = tagService;
+        this.userReviewLikeMapper = userReviewLikeMapper;
     }
 
     /**
@@ -137,8 +141,33 @@ public class AiReviewServiceImpl implements AiReviewService {
         if (reranked.size() > safeLimit) {
             reranked = reranked.subList(0, safeLimit);
         }
+        // 补充 likedByMe（让前端一进来就能显示点赞态）
+        attachLikedByMe(reranked, userId);
+
         // 构造带推荐理由的返回结构
         return buildRecommendResponses(reranked, userId, shopId, preferenceKeywords);
+    }
+
+    private void attachLikedByMe(java.util.List<Review> reviews, Long userId) {
+        if (userId == null || reviews == null || reviews.isEmpty()) {
+            return;
+        }
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        for (Review r : reviews) {
+            if (r != null && r.getId() != null) {
+                ids.add(r.getId());
+            }
+        }
+        if (ids.isEmpty()) {
+            return;
+        }
+        java.util.List<Long> likedIds = userReviewLikeMapper.findLikedReviewIds(userId, ids);
+        java.util.Set<Long> likedSet = new java.util.HashSet<>(likedIds == null ? java.util.List.of() : likedIds);
+        for (Review r : reviews) {
+            if (r != null && r.getId() != null) {
+                r.setLikedByMe(likedSet.contains(r.getId()));
+            }
+        }
     }
 
     /**

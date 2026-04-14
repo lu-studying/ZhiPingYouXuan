@@ -72,9 +72,26 @@
         - #{id} 会被替换为方法参数中的id值
     -->
     <select id="findById" resultMap="ShopResultMap">
-        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
-        FROM shop
-        WHERE id = #{id}
+        SELECT s.id,
+               s.name,
+               s.category,
+               s.address,
+               s.lng,
+               s.lat,
+               s.avg_price,
+               COALESCE(
+                   (SELECT ROUND(AVG(r.rating), 1)
+                    FROM review r
+                    WHERE r.shop_id = s.id AND r.status = 1),
+                   s.avg_score,
+                   0
+               ) AS avg_score,
+               s.status,
+               s.owner_user_id,
+               s.created_at,
+               s.updated_at
+        FROM shop s
+        WHERE s.id = #{id}
     </select>
 
     <!--
@@ -160,34 +177,64 @@
            - 例如：LIMIT 0, 10 表示从第0条开始，返回10条记录
     -->
     <select id="findByConditions" resultMap="ShopResultMap">
-        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
-        FROM shop
+        SELECT s.id,
+               s.name,
+               s.category,
+               s.address,
+               s.lng,
+               s.lat,
+               s.avg_price,
+               COALESCE(
+                   (SELECT ROUND(AVG(r.rating), 1)
+                    FROM review r
+                    WHERE r.shop_id = s.id AND r.status = 1),
+                   s.avg_score,
+                   0
+               ) AS avg_score,
+               s.status,
+               s.owner_user_id,
+               s.created_at,
+               s.updated_at
+        FROM shop s
         <where>
             <!-- 只查询正常状态的商家，已删除的商家不显示 -->
-            status = 1
+            s.status = 1
             
             <!-- 分类筛选：如果category不为空，则按分类精确匹配 -->
             <if test="category != null and category != ''">
-                AND category = #{category}
+                AND s.category = #{category}
             </if>
             
             <!-- 关键词搜索：如果keyword不为空，则在名称和地址中模糊搜索 -->
             <if test="keyword != null and keyword != ''">
-                AND (name LIKE CONCAT('%', #{keyword}, '%') OR address LIKE CONCAT('%', #{keyword}, '%'))
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%') OR s.address LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             
             <!-- 评分筛选：如果minScore不为空，则只返回评分>=minScore的商家 -->
             <if test="minScore != null">
-                AND avg_score >= #{minScore}
+                AND COALESCE(
+                    (SELECT AVG(r.rating)
+                     FROM review r
+                     WHERE r.shop_id = s.id AND r.status = 1),
+                    s.avg_score,
+                    0
+                ) >= #{minScore}
             </if>
             
             <!-- 价格筛选：如果maxPrice不为空，则只返回价格<=maxPrice的商家 -->
             <if test="maxPrice != null">
-                AND avg_price &lt;= #{maxPrice}
+                AND s.avg_price &lt;= #{maxPrice}
             </if>
         </where>
         <!-- 排序：按评分降序，评分相同时按创建时间降序 -->
-        ORDER BY avg_score DESC, created_at DESC
+        ORDER BY COALESCE(
+                     (SELECT AVG(r.rating)
+                      FROM review r
+                      WHERE r.shop_id = s.id AND r.status = 1),
+                     s.avg_score,
+                     0
+                 ) DESC,
+                 s.created_at DESC
         <!-- 分页：从offset位置开始，返回limit条记录 -->
         LIMIT #{offset}, #{limit}
     </select>
@@ -211,29 +258,35 @@
     -->
     <select id="countByConditions" resultType="long">
         SELECT COUNT(*)
-        FROM shop
+        FROM shop s
         <where>
             <!-- 只统计正常状态的商家，已删除的商家不计入总数 -->
-            status = 1
+            s.status = 1
             
             <!-- 分类筛选：如果category不为空，则按分类精确匹配 -->
             <if test="category != null and category != ''">
-                AND category = #{category}
+                AND s.category = #{category}
             </if>
             
             <!-- 关键词搜索：如果keyword不为空，则在名称和地址中模糊搜索 -->
             <if test="keyword != null and keyword != ''">
-                AND (name LIKE CONCAT('%', #{keyword}, '%') OR address LIKE CONCAT('%', #{keyword}, '%'))
+                AND (s.name LIKE CONCAT('%', #{keyword}, '%') OR s.address LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             
             <!-- 评分筛选：如果minScore不为空，则只统计评分>=minScore的商家 -->
             <if test="minScore != null">
-                AND avg_score >= #{minScore}
+                AND COALESCE(
+                    (SELECT AVG(r.rating)
+                     FROM review r
+                     WHERE r.shop_id = s.id AND r.status = 1),
+                    s.avg_score,
+                    0
+                ) >= #{minScore}
             </if>
             
             <!-- 价格筛选：如果maxPrice不为空，则只统计价格<=maxPrice的商家 -->
             <if test="maxPrice != null">
-                AND avg_price &lt;= #{maxPrice}
+                AND s.avg_price &lt;= #{maxPrice}
             </if>
         </where>
     </select>
@@ -271,11 +324,28 @@
         - 只返回 status=1（正常状态）的店铺
     -->
     <select id="findByOwnerUserId" resultMap="ShopResultMap">
-        SELECT id, name, category, address, lng, lat, avg_price, avg_score, status, owner_user_id, created_at, updated_at
-        FROM shop
-        WHERE owner_user_id = #{ownerUserId}
-          AND status = 1
-        ORDER BY created_at DESC
+        SELECT s.id,
+               s.name,
+               s.category,
+               s.address,
+               s.lng,
+               s.lat,
+               s.avg_price,
+               COALESCE(
+                   (SELECT ROUND(AVG(r.rating), 1)
+                    FROM review r
+                    WHERE r.shop_id = s.id AND r.status = 1),
+                   s.avg_score,
+                   0
+               ) AS avg_score,
+               s.status,
+               s.owner_user_id,
+               s.created_at,
+               s.updated_at
+        FROM shop s
+        WHERE s.owner_user_id = #{ownerUserId}
+          AND s.status = 1
+        ORDER BY s.created_at DESC
     </select>
 
 </mapper>

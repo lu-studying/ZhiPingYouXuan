@@ -64,20 +64,25 @@
     </view>
     
     <!-- 点赞区域 -->
-    <view class="review-footer">
-      <view class="like-section" @click="handleLike">
-        <text class="like-icon" :class="{ liked: isLiked }">❤️</text>
-        <text class="like-count">{{ review.likeCount || 0 }}</text>
+    <view class="review-footer" :class="{ 'has-shop-brief': showShopBrief && review.shopName }">
+      <view v-if="showShopBrief && review.shopName" class="shop-brief">
+        <text class="shop-brief-name">{{ review.shopName }}</text>
+        <rating-stars :rating="review.shopAvgScore || 0" :show-score="false" />
+      </view>
+      <view class="like-section" :class="{ liked: isLiked }" @click.stop="handleLike">
+        <text class="like-icon" :class="{ liked: isLiked }">{{ isLiked ? '❤️' : '🤍' }}</text>
+        <text class="like-count" :class="{ liked: isLiked }">{{ review.likeCount || 0 }}</text>
+        <text class="like-text" :class="{ liked: isLiked }">{{ isLiked ? '已点赞' : '点赞' }}</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import RatingStars from './rating-stars.vue'
 import { formatRelativeTime, getImageUrl } from '@/utils/format'
-import { likeReview } from '@/api/reviews'
+import { likeReview, unlikeReview } from '@/api/reviews'
 
 /**
  * 点评卡片组件
@@ -115,6 +120,10 @@ const props = defineProps({
   shopId: {
     type: [Number, String],
     default: null
+  },
+  showShopBrief: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -122,6 +131,14 @@ const emit = defineEmits(['like'])
 
 const isLiked = ref(false)
 const isExpanded = ref(false) // 推荐理由是否展开
+
+watch(
+  () => props.review,
+  (val) => {
+    isLiked.value = Boolean(val?.likedByMe || val?.liked || false)
+  },
+  { immediate: true, deep: true }
+)
 
 /**
  * 解析图片列表
@@ -237,19 +254,30 @@ const handleLike = async () => {
     uni.showToast({ title: '缺少商家ID', icon: 'none' })
     return
   }
-  
-  if (isLiked.value) {
-    return
-  }
-  
+
   try {
-    await likeReview(props.shopId, props.review.id)
-    isLiked.value = true
-    props.review.likeCount = (props.review.likeCount || 0) + 1
-    emit('like', props.review.id)
+    if (!isLiked.value) {
+      const res = await likeReview(props.shopId, props.review.id)
+      if (res?.liked) {
+        isLiked.value = true
+        props.review.likedByMe = true
+        props.review.likeCount = (props.review.likeCount || 0) + 1
+        emit('like', props.review.id)
+      } else {
+        isLiked.value = true
+        props.review.likedByMe = true
+        uni.showToast({ title: '已点赞', icon: 'none', duration: 1200 })
+      }
+    } else {
+      await unlikeReview(props.shopId, props.review.id)
+      isLiked.value = false
+      props.review.likedByMe = false
+      props.review.likeCount = Math.max(0, (props.review.likeCount || 0) - 1)
+      uni.showToast({ title: '已取消点赞', icon: 'none', duration: 1200 })
+    }
   } catch (error) {
     console.error('点赞失败:', error)
-    uni.showToast({ title: '点赞失败', icon: 'none' })
+    uni.showToast({ title: error?.data?.message || '操作失败', icon: 'none' })
   }
 }
 </script>
@@ -460,8 +488,29 @@ const handleLike = async () => {
 .review-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 16rpx;
   padding-top: 20rpx;
   border-top: 1rpx solid #f0f0f0;
+}
+
+.review-footer.has-shop-brief {
+  justify-content: space-between;
+}
+
+.shop-brief {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.shop-brief-name {
+  font-size: 24rpx;
+  color: #666;
+  max-width: 320rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .like-section {
@@ -471,11 +520,17 @@ const handleLike = async () => {
   padding: 8rpx 16rpx;
   border-radius: 20rpx;
   background-color: #f5f5f5;
-  transition: background-color 0.2s;
+  border: 1rpx solid #e8e8e8;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .like-section:active {
   background-color: #e0e0e0;
+}
+
+.like-section.liked {
+  background-color: #fff1f0;
+  border-color: #ffccc7;
 }
 
 .like-icon {
@@ -490,6 +545,20 @@ const handleLike = async () => {
 .like-count {
   font-size: 24rpx;
   color: #666;
+}
+
+.like-count.liked {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+.like-text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.like-text.liked {
+  color: #ff4d4f;
 }
 </style>
 

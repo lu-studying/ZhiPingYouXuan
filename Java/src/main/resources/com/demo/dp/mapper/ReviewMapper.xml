@@ -15,14 +15,19 @@
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
         <result property="userNickname" column="user_nickname"/>
+        <result property="likedByMe" column="liked_by_me"/>
+        <result property="shopName" column="shop_name"/>
+        <result property="shopAvgScore" column="shop_avg_score"/>
     </resultMap>
 
     <!-- 根据商家 ID 分页查询 -->
     <select id="findByShopId" resultMap="ReviewResultMap">
         SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
-               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname,
+               CASE WHEN url.user_id IS NULL THEN 0 ELSE 1 END AS liked_by_me
         FROM review r
         LEFT JOIN user u ON r.user_id = u.id
+        LEFT JOIN user_review_like url ON url.review_id = r.id AND url.user_id = #{currentUserId}
         WHERE r.shop_id = #{shopId} AND r.status = 1
         ORDER BY r.created_at DESC
         LIMIT #{offset}, #{limit}
@@ -85,6 +90,12 @@
         WHERE id = #{id}
     </update>
 
+    <update id="decreaseLikeCount">
+        UPDATE review
+        SET like_count = CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END
+        WHERE id = #{id}
+    </update>
+
     <!-- 统计所有正常状态的点评总数 -->
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
@@ -104,9 +115,11 @@
     <!-- 根据用户 ID 分页查询点评列表 -->
     <select id="findByUserId" resultMap="ReviewResultMap">
         SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated, 
-               r.like_count, r.status, r.created_at, u.nickname AS user_nickname
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname,
+               s.name AS shop_name, s.avg_score AS shop_avg_score
         FROM review r
         LEFT JOIN user u ON r.user_id = u.id
+        LEFT JOIN shop s ON r.shop_id = s.id
         WHERE r.user_id = #{userId} AND r.status = 1
         ORDER BY r.created_at DESC
         LIMIT #{offset}, #{limit}

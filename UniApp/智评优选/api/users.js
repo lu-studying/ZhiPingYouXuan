@@ -53,6 +53,18 @@ export function getMyReviews(params = {}) {
   })
 }
 
+export function getMyLikedReviews(params = {}) {
+  return request({
+    url: '/users/me/liked-reviews',
+    method: 'get',
+    params: {
+      page: params.page || 0,
+      size: params.size || 10
+    },
+    loading: false
+  })
+}
+
 /**
  * 更新当前用户信息
  * 

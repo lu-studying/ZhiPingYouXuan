@@ -23,7 +23,7 @@ public interface ReviewService {
      * @param size 每页大小
      * @return 点评列表
      */
-    List<Review> listByShop(Long shopId, int page, int size);
+    List<Review> listByShop(Long shopId, Long currentUserId, int page, int size);
 
     /**
      * 获取商家点评总数
@@ -54,7 +54,9 @@ public interface ReviewService {
      * @param userId   点赞用户ID（当前登录用户）
      * @param reviewId 点评ID
      */
-    void likeReview(Long userId, Long reviewId);
+    boolean likeReview(Long userId, Long reviewId);
+
+    boolean unlikeReview(Long userId, Long reviewId);
 
     /**
      * 分页查询用户点评列表。
@@ -73,6 +75,10 @@ public interface ReviewService {
      * @return 点评总数
      */
     long countByUserId(Long userId);
+
+    List<Review> listLikedByUser(Long userId, int page, int size);
+
+    long countLikedByUser(Long userId);
 
     Review getById(Long id);
 

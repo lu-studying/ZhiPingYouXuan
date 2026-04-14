@@ -50,13 +50,21 @@ export function createReview(shopId, data) {
  * 
  * @param {number} shopId - 商家ID
  * @param {number} reviewId - 点评ID
- * @returns {Promise<{message: string}>}
+ * @returns {Promise<{message: string, liked: boolean}>}
  */
 export function likeReview(shopId, reviewId) {
   return request({
     url: `/shops/${shopId}/reviews/${reviewId}/like`,
     method: 'post',
     loading: false // 点赞不需要显示 loading
+  })
+}
+
+export function unlikeReview(shopId, reviewId) {
+  return request({
+    url: `/shops/${shopId}/reviews/${reviewId}/like`,
+    method: 'delete',
+    loading: false
   })
 }
 

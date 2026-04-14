@@ -53,9 +53,22 @@
 			}
 		},
 		{
+			"path": "pages/user/liked-reviews",
+			"style": {
+				"navigationBarTitleText": "我的点赞",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
 			"path": "pages/user/tags",
 			"style": {
 				"navigationBarTitleText": "偏好设置"
+			}
+		},
+		{
+			"path": "pages/user/wallet",
+			"style": {
+				"navigationBarTitleText": "账户余额"
 			}
 		},
 		{

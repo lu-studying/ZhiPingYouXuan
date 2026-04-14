@@ -34,7 +34,7 @@
       <!-- 特别推荐菜单区域 -->
       <view class="recommended-menus-section">
         <view class="section-header">
-          <text class="section-title">🍽️ 特别推荐菜单</text>
+          <text class="section-title">🍽️ 商家推荐菜单</text>
         </view>
         <view v-if="recommendedMenus.length > 0" class="menus-list">
           <menu-card 
@@ -543,6 +543,7 @@ onReachBottom(() => {
 .review-item {
   margin-bottom: 20rpx;
 }
+
 
 /* 全部点评区域 */
 .reviews-section {

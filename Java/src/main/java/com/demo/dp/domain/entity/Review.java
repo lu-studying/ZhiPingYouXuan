@@ -31,6 +31,13 @@ public class Review {
     // 用户昵称（用于查询结果映射，不持久化到数据库）
     private String userNickname; // 用户昵称
 
+    // 当前登录用户是否点赞（用于前端展示态）
+    private Boolean likedByMe;
+
+    // 商家信息（用于“我的点赞”列表展示）
+    private String shopName;
+    private Double shopAvgScore;
+
     // region getters/setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -54,6 +61,12 @@ public class Review {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public String getUserNickname() { return userNickname; }
     public void setUserNickname(String userNickname) { this.userNickname = userNickname; }
+    public Boolean getLikedByMe() { return likedByMe; }
+    public void setLikedByMe(Boolean likedByMe) { this.likedByMe = likedByMe; }
+    public String getShopName() { return shopName; }
+    public void setShopName(String shopName) { this.shopName = shopName; }
+    public Double getShopAvgScore() { return shopAvgScore; }
+    public void setShopAvgScore(Double shopAvgScore) { this.shopAvgScore = shopAvgScore; }
     // endregion
 }
 

@@ -58,8 +58,10 @@ public class ReviewController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> list(@PathVariable Long shopId,
                                                       @RequestParam(defaultValue = "0") int page,
-                                                      @RequestParam(defaultValue = "10") int size) {
-        List<Review> reviews = reviewService.listByShop(shopId, page, size);
+                                                      @RequestParam(defaultValue = "10") int size,
+                                                      Authentication authentication) {
+        Long currentUserId = authentication == null ? null : Long.parseLong(authentication.getName());
+        List<Review> reviews = reviewService.listByShop(shopId, currentUserId, page, size);
         long total = reviewService.countByShopId(shopId);
         Map<String, Object> result = new HashMap<>();
         result.put("content", reviews);
@@ -91,8 +93,23 @@ public class ReviewController {
                                   @PathVariable Long reviewId,
                                   Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
-        reviewService.likeReview(userId, reviewId);
-        return ResponseEntity.ok(java.util.Map.of("message", "点赞成功"));
+        boolean liked = reviewService.likeReview(userId, reviewId);
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", liked ? "点赞成功" : "已点赞",
+                "liked", liked
+        ));
+    }
+
+    @DeleteMapping("/{reviewId}/like")
+    public ResponseEntity<?> unlike(@PathVariable Long shopId,
+                                    @PathVariable Long reviewId,
+                                    Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        boolean unliked = reviewService.unlikeReview(userId, reviewId);
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", unliked ? "已取消点赞" : "未点赞",
+                "liked", !unliked
+        ));
     }
 
     /**

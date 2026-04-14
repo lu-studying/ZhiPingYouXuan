@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dp.mapper.UserReviewLikeMapper">
+
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO user_review_like (user_id, review_id, created_at)
+        VALUES (#{userId}, #{reviewId}, NOW())
+    </insert>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(*)
+        FROM user_review_like
+        WHERE user_id = #{userId}
+          AND review_id = #{reviewId}
+        LIMIT 1
+    </select>
+
+    <delete id="delete">
+        DELETE FROM user_review_like
+        WHERE user_id = #{userId}
+          AND review_id = #{reviewId}
+    </delete>
+
+    <select id="findLikedReviewsByUser" resultMap="com.demo.dp.mapper.ReviewMapper.ReviewResultMap">
+        SELECT r.id, r.shop_id, r.user_id, r.rating, r.content, r.images, r.is_ai_generated,
+               r.like_count, r.status, r.created_at, u.nickname AS user_nickname,
+               1 AS liked_by_me,
+               s.name AS shop_name,
+               s.avg_score AS shop_avg_score
+        FROM user_review_like url
+        JOIN review r ON url.review_id = r.id
+        LEFT JOIN user u ON r.user_id = u.id
+        LEFT JOIN shop s ON r.shop_id = s.id
+        WHERE url.user_id = #{userId}
+          AND r.status = 1
+        ORDER BY url.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="findLikedReviewIds" resultType="long">
+        SELECT review_id
+        FROM user_review_like
+        WHERE user_id = #{userId}
+          AND review_id IN
+          <foreach collection="reviewIds" item="id" open="(" separator="," close=")">
+              #{id}
+          </foreach>
+    </select>
+
+    <select id="countLikedReviewsByUser" resultType="long">
+        SELECT COUNT(*)
+        FROM user_review_like url
+        JOIN review r ON url.review_id = r.id
+        WHERE url.user_id = #{userId}
+          AND r.status = 1
+    </select>
+
+</mapper>

@@ -345,4 +345,21 @@ CREATE TABLE `user_tag`  (
 -- ----------------------------
 INSERT INTO `user_tag` VALUES (5, 7, 3, 1, '2026-01-20 22:38:54');
 
+-- ----------------------------
+-- Table structure for user_review_like
+-- ----------------------------
+DROP TABLE IF EXISTS `user_review_like`;
+CREATE TABLE `user_review_like`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `review_id` bigint NOT NULL COMMENT '点评ID',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_review_like`(`user_id` ASC, `review_id` ASC) USING BTREE,
+  INDEX `idx_user_review_like_user`(`user_id` ASC) USING BTREE,
+  INDEX `idx_user_review_like_review`(`review_id` ASC) USING BTREE,
+  CONSTRAINT `fk_user_review_like_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_user_review_like_review` FOREIGN KEY (`review_id`) REFERENCES `review` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户点赞点评关系表' ROW_FORMAT = Dynamic;
+
 SET FOREIGN_KEY_CHECKS = 1;

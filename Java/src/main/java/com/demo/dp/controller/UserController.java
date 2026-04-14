@@ -322,6 +322,25 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/me/liked-reviews")
+    public ResponseEntity<Map<String, Object>> getMyLikedReviews(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Long userId = Long.parseLong(authentication.getName());
+        List<Review> reviews = reviewService.listLikedByUser(userId, page, size);
+        long total = reviewService.countLikedByUser(userId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", reviews);
+        result.put("total", total);
+        result.put("page", page);
+        result.put("size", size);
+
+        return ResponseEntity.ok(result);
+    }
+
     /**
      * 查询指定用户的点评列表。
      * 

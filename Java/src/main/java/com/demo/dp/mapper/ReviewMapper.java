@@ -15,7 +15,8 @@ public interface ReviewMapper {
     /**
      * 根据商家 ID 分页查询点评
      */
-    List<Review> findByShopId(@Param("shopId") Long shopId, 
+    List<Review> findByShopId(@Param("shopId") Long shopId,
+                              @Param("currentUserId") Long currentUserId,
                               @Param("offset") int offset, 
                               @Param("limit") int limit);
 
@@ -63,6 +64,11 @@ public interface ReviewMapper {
      * @return 受影响行数（1表示成功，0表示未找到）
      */
     int increaseLikeCount(@Param("id") Long id);
+
+    /**
+     * 取消点赞计数自减：like_count = GREATEST(like_count - 1, 0)。
+     */
+    int decreaseLikeCount(@Param("id") Long id);
 
     /**
      * 统计所有正常状态的点评总数（status=1）。

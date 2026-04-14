@@ -4,6 +4,7 @@ import com.demo.dp.domain.entity.Review;
 import com.demo.dp.domain.entity.ReviewKeyword;
 import com.demo.dp.mapper.ReviewKeywordMapper;
 import com.demo.dp.mapper.ReviewMapper;
+import com.demo.dp.mapper.UserReviewLikeMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +23,14 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewMapper reviewMapper;
     private final ReviewKeywordMapper reviewKeywordMapper;
+    private final UserReviewLikeMapper userReviewLikeMapper;
 
     public ReviewServiceImpl(ReviewMapper reviewMapper,
-                             ReviewKeywordMapper reviewKeywordMapper) {
+                             ReviewKeywordMapper reviewKeywordMapper,
+                             UserReviewLikeMapper userReviewLikeMapper) {
         this.reviewMapper = reviewMapper;
         this.reviewKeywordMapper = reviewKeywordMapper;
+        this.userReviewLikeMapper = userReviewLikeMapper;
     }
 
     /**
@@ -34,9 +38,9 @@ public class ReviewServiceImpl implements ReviewService {
      * 如需完整 Page 对象，可自行封装分页信息
      */
     @Override
-    public List<Review> listByShop(Long shopId, int page, int size) {
+    public List<Review> listByShop(Long shopId, Long currentUserId, int page, int size) {
         int offset = page * size;
-        return reviewMapper.findByShopId(shopId, offset, size);
+        return reviewMapper.findByShopId(shopId, currentUserId, offset, size);
     }
 
     /**
@@ -78,17 +82,36 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public void likeReview(Long userId, Long reviewId) {
+    public boolean likeReview(Long userId, Long reviewId) {
         // 检查点评是否存在且为正常状态
         Review review = reviewMapper.findById(reviewId);
         if (review == null || review.getStatus() == null || review.getStatus() != 1) {
             throw new RuntimeException("点评不存在或已下线，ID: " + reviewId);
         }
-        // TODO: 可在此处增加 userId + reviewId 维度的防重复点赞逻辑（新增点赞表），当前为简单自增
+        int inserted = userReviewLikeMapper.insertIgnore(userId, reviewId);
+        if (inserted == 0) {
+            return false; // 已点赞，幂等返回
+        }
         int rows = reviewMapper.increaseLikeCount(reviewId);
         if (rows == 0) {
             throw new RuntimeException("点赞失败，点评ID: " + reviewId);
         }
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean unlikeReview(Long userId, Long reviewId) {
+        Review review = reviewMapper.findById(reviewId);
+        if (review == null || review.getStatus() == null || review.getStatus() != 1) {
+            throw new RuntimeException("点评不存在或已下线，ID: " + reviewId);
+        }
+        int deleted = userReviewLikeMapper.delete(userId, reviewId);
+        if (deleted == 0) {
+            return false; // 本来就没点过赞，幂等返回
+        }
+        reviewMapper.decreaseLikeCount(reviewId);
+        return true;
     }
 
     /**
@@ -145,6 +168,17 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public long countByUserId(Long userId) {
         return reviewMapper.countByUserId(userId);
+    }
+
+    @Override
+    public List<Review> listLikedByUser(Long userId, int page, int size) {
+        int offset = page * size;
+        return userReviewLikeMapper.findLikedReviewsByUser(userId, offset, size);
+    }
+
+    @Override
+    public long countLikedByUser(Long userId) {
+        return userReviewLikeMapper.countLikedReviewsByUser(userId);
     }
 
     @Override

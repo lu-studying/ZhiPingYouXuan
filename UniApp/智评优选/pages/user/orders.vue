@@ -93,6 +93,18 @@ const pendingTotalAmount = computed(() => {
   }, 0)
 })
 
+const getChinaDateTime = () => {
+  const now = new Date()
+  const shanghai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }))
+  const yyyy = shanghai.getFullYear()
+  const mm = String(shanghai.getMonth() + 1).padStart(2, '0')
+  const dd = String(shanghai.getDate()).padStart(2, '0')
+  const hh = String(shanghai.getHours()).padStart(2, '0')
+  const mi = String(shanghai.getMinutes()).padStart(2, '0')
+  const ss = String(shanghai.getSeconds()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`
+}
+
 onMounted(() => {
   loadPendingOrder()
   loadOrders()
@@ -185,7 +197,7 @@ const submitPendingOrder = async () => {
           quantity: item.quantity
         }))
       ),
-      visitTime: new Date().toISOString()
+      visitTime: getChinaDateTime()
     })
     await payOrder(createRes.id, 'MOCK_WECHAT')
     uni.showToast({ title: '支付成功', icon: 'success' })
