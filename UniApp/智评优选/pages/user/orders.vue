@@ -32,6 +32,10 @@
 
       <view class="checkout-footer">
         <text class="checkout-total">共{{ pendingTotalCount }}份，合计 {{ formatPrice(pendingTotalAmount) }}</text>
+        <view v-if="insufficientBalanceTip" class="balance-warning">
+          <text class="warning-icon">❗</text>
+          <text class="warning-text">{{ insufficientBalanceTip }}</text>
+        </view>
         <view class="checkout-footer-actions">
           <button class="btn-clear" @click="clearPendingOrder">清空</button>
           <button class="btn-submit" :disabled="submitting" @click="submitPendingOrder">
@@ -82,6 +86,7 @@ const orders = ref([])
 const loading = ref(true)
 const pendingOrder = ref(null)
 const submitting = ref(false)
+const insufficientBalanceTip = ref('')
 
 const pendingItems = computed(() => pendingOrder.value?.items || [])
 const pendingTotalCount = computed(() => {
@@ -162,6 +167,7 @@ const persistPendingOrder = () => {
 
 const increasePendingQty = (index) => {
   pendingOrder.value.items[index].quantity += 1
+  insufficientBalanceTip.value = ''
   persistPendingOrder()
 }
 
@@ -173,11 +179,13 @@ const decreasePendingQty = (index) => {
   } else {
     item.quantity -= 1
   }
+  insufficientBalanceTip.value = ''
   persistPendingOrder()
 }
 
 const clearPendingOrder = () => {
   pendingOrder.value = null
+  insufficientBalanceTip.value = ''
   uni.removeStorageSync('pending_checkout_order')
 }
 
@@ -201,11 +209,18 @@ const submitPendingOrder = async () => {
     })
     await payOrder(createRes.id, 'MOCK_WECHAT')
     uni.showToast({ title: '支付成功', icon: 'success' })
+    insufficientBalanceTip.value = ''
     clearPendingOrder()
     loadOrders()
   } catch (e) {
     console.error('下单支付失败:', e)
-    uni.showToast({ title: e?.data?.message || '下单或支付失败', icon: 'none' })
+    const msg = e?.data?.message || '下单或支付失败'
+    if (msg.includes('余额不足')) {
+      insufficientBalanceTip.value = `❗ ${msg}`
+    } else {
+      insufficientBalanceTip.value = ''
+    }
+    uni.showToast({ title: msg, icon: 'none' })
   } finally {
     submitting.value = false
   }
@@ -382,6 +397,29 @@ onPullDownRefresh(() => {
   font-size: 26rpx;
   color: #222;
   margin-bottom: 12rpx;
+}
+
+.balance-warning {
+  margin-bottom: 14rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: #fff1f0;
+  border: 1rpx solid #ffa39e;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.warning-icon {
+  color: #ff4d4f;
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.warning-text {
+  color: #cf1322;
+  font-size: 30rpx;
+  font-weight: 600;
 }
 
 .checkout-footer-actions {

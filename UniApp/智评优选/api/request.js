@@ -91,7 +91,7 @@ function request(options) {
       method: options.method || 'GET',
       data: options.data,
       header: header,
-      timeout: REQUEST_TIMEOUT,
+      timeout: typeof options.timeout === 'number' ? options.timeout : REQUEST_TIMEOUT,
       success: (res) => {
         // 隐藏 loading
         if (options.loading !== false) {

@@ -64,12 +64,14 @@ public class AiClient {
     private String model;      // 模型名称：如 gpt-3.5-turbo / qwen3-max
 
     @Value("${ai.timeout-ms:8000}")
-    private int timeoutMs;     // 读取超时时间（毫秒），目前用于构造 RestTemplate
+    private int timeoutMs;     // 读取超时时间（毫秒）
 
-    public AiClient(RestTemplateBuilder builder) {
+    public AiClient(RestTemplateBuilder builder, @Value("${ai.timeout-ms:8000}") int timeoutMs) {
+        int readTimeout = Math.max(timeoutMs, 1000);
+        int connectTimeout = Math.min(5000, readTimeout);
         this.restTemplate = builder
-                .setConnectTimeout(Duration.ofMillis(3000))
-                .setReadTimeout(Duration.ofMillis(8000))
+                .setConnectTimeout(Duration.ofMillis(connectTimeout))
+                .setReadTimeout(Duration.ofMillis(readTimeout))
                 .build();
     }
 

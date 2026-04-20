@@ -76,8 +76,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { createReview, generateAiDraft } from '@/api/reviews'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { createReview, startAiDraftTask, getAiDraftTask } from '@/api/reviews'
 import { uploadFile } from '@/api/files'
 import RatingStars from '@/components/rating-stars.vue'
 import { getImageUrl } from '@/utils/format'
@@ -88,12 +88,21 @@ const images = ref([])
 const shopId = ref(null)
 const aiDraftLoading = ref(false)
 const submitting = ref(false)
+const aiDraftTaskId = ref('')
+let aiDraftPollTimer = null
 
 onMounted(() => {
   // 从路由参数获取 shopId
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   shopId.value = currentPage.options?.shopId
+})
+
+onBeforeUnmount(() => {
+  if (aiDraftPollTimer) {
+    clearInterval(aiDraftPollTimer)
+    aiDraftPollTimer = null
+  }
 })
 
 /**
@@ -111,28 +120,69 @@ const handleGenerateDraft = async () => {
   
   try {
     aiDraftLoading.value = true
-    uni.showLoading({ 
-      title: 'AI 正在生成中...', 
-      mask: true 
-    })
-    
-    const res = await generateAiDraft(shopId.value, {
+    // 1) 启动异步任务：立刻返回，不阻塞用户继续上传图片/编辑
+    const startRes = await startAiDraftTask(shopId.value, {
       preference: '' // 可选：传递用户偏好
     })
-    
-    if (res.draft) {
-      content.value = res.draft
-      uni.showToast({ 
-        title: '草稿生成成功', 
-        icon: 'success',
-        duration: 2000
-      })
-    } else {
-      uni.showToast({ 
-        title: '生成失败，请重试', 
-        icon: 'none' 
-      })
+    aiDraftTaskId.value = startRes?.taskId || ''
+    if (!aiDraftTaskId.value) {
+      throw new Error('启动任务失败')
     }
+
+    uni.showToast({
+      title: '已开始生成，可继续上传图片',
+      icon: 'none',
+      duration: 2000
+    })
+
+    // 2) 轮询任务状态，完成后自动回填
+    if (aiDraftPollTimer) {
+      clearInterval(aiDraftPollTimer)
+      aiDraftPollTimer = null
+    }
+    let attempts = 0
+    const maxAttempts = 120 // 约 2 分钟（1s * 120）
+    aiDraftPollTimer = setInterval(async () => {
+      attempts += 1
+      if (attempts > maxAttempts) {
+        clearInterval(aiDraftPollTimer)
+        aiDraftPollTimer = null
+        aiDraftLoading.value = false
+        uni.showToast({ title: '生成超时，可稍后再试', icon: 'none' })
+        return
+      }
+      try {
+        const statusRes = await getAiDraftTask(shopId.value, aiDraftTaskId.value)
+        const status = statusRes?.status
+        if (status === 'succeeded') {
+          clearInterval(aiDraftPollTimer)
+          aiDraftPollTimer = null
+          aiDraftLoading.value = false
+          if (statusRes?.draft) {
+            content.value = statusRes.draft
+            uni.showToast({ title: '草稿已生成', icon: 'success', duration: 1500 })
+          } else {
+            uni.showToast({ title: '生成完成但无内容', icon: 'none' })
+          }
+        } else if (status === 'failed') {
+          clearInterval(aiDraftPollTimer)
+          aiDraftPollTimer = null
+          aiDraftLoading.value = false
+          uni.showToast({ title: statusRes?.error || '生成失败', icon: 'none' })
+        } else if (status === 'not_found') {
+          clearInterval(aiDraftPollTimer)
+          aiDraftPollTimer = null
+          aiDraftLoading.value = false
+          uni.showToast({ title: '任务已过期，请重试', icon: 'none' })
+        }
+        // queued/running: 继续等
+      } catch (e) {
+        // 轮询过程中允许网络偶发失败，不打断用户操作
+        if (attempts % 10 === 0) {
+          console.warn('轮询任务状态失败:', e)
+        }
+      }
+    }, 1000)
   } catch (error) {
     console.error('生成草稿失败:', error)
     uni.showToast({ 
@@ -141,8 +191,8 @@ const handleGenerateDraft = async () => {
       duration: 2000
     })
   } finally {
-    aiDraftLoading.value = false
-    uni.hideLoading()
+    // 注意：异步模式下 loading 的关闭交给轮询完成/失败时处理
+    // 这里不要强制置 false，否则按钮文案会立刻恢复，看起来像没在生成
   }
 }
 

@@ -4,9 +4,12 @@ import com.demo.dp.domain.entity.Review;
 import com.demo.dp.domain.entity.Shop;
 import com.demo.dp.dto.AiDraftRequest;
 import com.demo.dp.dto.AiDraftResponse;
+import com.demo.dp.dto.AiDraftTaskStartResponse;
+import com.demo.dp.dto.AiDraftTaskStatusResponse;
 import com.demo.dp.dto.AiRecommendItemResponse;
 import com.demo.dp.dto.ReviewCreateRequest;
 import com.demo.dp.mapper.ShopMapper;
+import com.demo.dp.service.AiDraftTaskService;
 import com.demo.dp.service.AiReviewService;
 import com.demo.dp.service.ReviewService;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +30,13 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final AiReviewService aiReviewService;
+    private final AiDraftTaskService aiDraftTaskService;
     private final ShopMapper shopMapper;
 
-    public ReviewController(ReviewService reviewService, AiReviewService aiReviewService, ShopMapper shopMapper) {
+    public ReviewController(ReviewService reviewService, AiReviewService aiReviewService, AiDraftTaskService aiDraftTaskService, ShopMapper shopMapper) {
         this.reviewService = reviewService;
         this.aiReviewService = aiReviewService;
+        this.aiDraftTaskService = aiDraftTaskService;
         this.shopMapper = shopMapper;
     }
 
@@ -128,6 +133,33 @@ public class ReviewController {
         String preference = request.getPreference();
         String draft = aiReviewService.generateDraft(userId, shopId, preference);
         return ResponseEntity.ok(new AiDraftResponse(draft));
+    }
+
+    /**
+     * 异步启动 AI 草稿生成任务。
+     *
+     * <p>路径：POST /api/shops/{shopId}/reviews/ai-draft/tasks
+     * <p>出参：taskId（用于轮询查询状态）
+     */
+    @PostMapping("/ai-draft/tasks")
+    public ResponseEntity<AiDraftTaskStartResponse> startAiDraftTask(@PathVariable Long shopId,
+                                                                     @RequestBody(required = false) AiDraftRequest request,
+                                                                     Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        return ResponseEntity.ok(aiDraftTaskService.start(userId, shopId, request));
+    }
+
+    /**
+     * 查询 AI 草稿生成任务状态。
+     *
+     * <p>路径：GET /api/shops/{shopId}/reviews/ai-draft/tasks/{taskId}
+     */
+    @GetMapping("/ai-draft/tasks/{taskId}")
+    public ResponseEntity<AiDraftTaskStatusResponse> getAiDraftTask(@PathVariable Long shopId,
+                                                                    @PathVariable String taskId,
+                                                                    Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        return ResponseEntity.ok(aiDraftTaskService.getStatus(userId, shopId, taskId));
     }
 
     /**

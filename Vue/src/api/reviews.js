@@ -71,7 +71,9 @@ export function generateAiDraft(shopId, data = {}) {
   return request({
     url: `/shops/${shopId}/reviews/ai-draft`,
     method: 'post',
-    data
+    data,
+    // AI 生成可能较慢，单独放宽超时，避免全局接口都变慢
+    timeout: 120000
   })
 }
 

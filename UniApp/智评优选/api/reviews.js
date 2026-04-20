@@ -80,7 +80,32 @@ export function generateAiDraft(shopId, data = {}) {
   return request({
     url: `/shops/${shopId}/reviews/ai-draft`,
     method: 'post',
-    data
+    data,
+    timeout: 120000
+  })
+}
+
+/**
+ * 异步启动 AI 草稿生成任务（推荐：不阻塞用户操作）。
+ */
+export function startAiDraftTask(shopId, data = {}) {
+  return request({
+    url: `/shops/${shopId}/reviews/ai-draft/tasks`,
+    method: 'post',
+    data,
+    timeout: 15000
+  })
+}
+
+/**
+ * 查询 AI 草稿生成任务状态。
+ */
+export function getAiDraftTask(shopId, taskId) {
+  return request({
+    url: `/shops/${shopId}/reviews/ai-draft/tasks/${taskId}`,
+    method: 'get',
+    loading: false,
+    timeout: 15000
   })
 }
 
